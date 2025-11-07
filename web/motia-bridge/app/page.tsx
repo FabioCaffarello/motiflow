@@ -22,17 +22,49 @@ import {
   PromptInputButton,
   PromptInputSubmit,
   PromptInputTextarea,
-  PromptInputToolbar,
+  PromptInputFooter,
   PromptInputTools,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputActionAddAttachments,
+  PromptInputSpeechButton,
+  type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
-import { MicIcon, PaperclipIcon } from "lucide-react";
+import { GlobeIcon } from "lucide-react";
+import { useRef, useState } from "react";
 
 export default function Home() {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [useWebSearch, setUseWebSearch] = useState(false);
+  
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
     }),
   });
+  
+  const handleSubmit = (message: PromptInputMessage) => {
+    const hasText = Boolean(message.text?.trim());
+    const hasAttachments = Boolean(message.files?.length);
+    
+    if (!(hasText || hasAttachments)) {
+      return;
+    }
+    
+    void sendMessage(
+      { 
+        text: message.text || "Sent with attachments",
+        files: message.files 
+      },
+      {
+        body: {
+          webSearch: useWebSearch,
+        },
+      }
+    );
+  };
+
   console.log(messages, status);
 
   return (
@@ -62,8 +94,8 @@ export default function Home() {
                           <ToolContent>
                             <ToolInput input={p.input} />
                             <ToolOutput
-                              output={(p as any).output}
-                              errorText={(p as any).errorText}
+                              output={(p as { output?: unknown }).output}
+                              errorText={(p as { errorText?: string }).errorText}
                             />
                           </ToolContent>
                         </Tool>
@@ -78,30 +110,41 @@ export default function Home() {
           <ConversationScrollButton />
         </Conversation>
 
-                <PromptInput
-          onSubmit={(message, e) => {
-            e?.preventDefault();
-            const text = (message.text ?? "").trim();
-            if (!text && !(message.files && message.files.length)) return;
-            void sendMessage({ text, files: message.files });
-            e?.currentTarget?.reset();
-          }}
+        <PromptInput 
+          onSubmit={handleSubmit}
+          className="mt-4" 
+          globalDrop 
+          multiple
         >
           <PromptInputBody>
-            <PromptInputTextarea placeholder="Type a message..." />
+            <PromptInputTextarea 
+              placeholder="Type a message..." 
+              ref={textareaRef}
+            />
           </PromptInputBody>
-          <PromptInputToolbar>
+          <PromptInputFooter>
             <PromptInputTools>
-              <PromptInputButton aria-label="Add attachment" disabled>
-                <PaperclipIcon className="size-4" />
-              </PromptInputButton>
-              <PromptInputButton aria-label="Start voice input" disabled>
-                <MicIcon className="size-4" />
-                <span className="hidden sm:inline">Voice</span>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+              
+              <PromptInputSpeechButton
+                textareaRef={textareaRef}
+              />
+              
+              <PromptInputButton
+                onClick={() => setUseWebSearch(!useWebSearch)}
+                variant={useWebSearch ? 'default' : 'ghost'}
+              >
+                <GlobeIcon size={16} />
+                <span>Search</span>
               </PromptInputButton>
             </PromptInputTools>
             <PromptInputSubmit status={status} />
-          </PromptInputToolbar>
+          </PromptInputFooter>
         </PromptInput>
       </main>
     </div>

@@ -877,18 +877,6 @@ export const PromptInputTextarea = ({
   );
 };
 
-export type PromptInputToolbarProps = HTMLAttributes<HTMLDivElement>;
-
-export const PromptInputToolbar = ({
-  className,
-  ...props
-}: PromptInputToolbarProps) => (
-  <div
-    className={cn("flex items-center justify-between p-1", className)}
-    {...props}
-  />
-);
-
 export type PromptInputHeaderProps = Omit<
   ComponentProps<typeof InputGroupAddon>,
   "align"
