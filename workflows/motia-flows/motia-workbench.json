@@ -24,5 +24,18 @@
         "y": 264
       }
     }
+  },
+  {
+    "id": "files-processing-flow",
+    "config": {
+      "steps/api-steps/api-files.step.ts": {
+        "x": -136,
+        "y": -19
+      },
+      "steps/spark_process_csv_step.py": {
+        "x": 184,
+        "y": 62
+      }
+    }
   }
 ]
