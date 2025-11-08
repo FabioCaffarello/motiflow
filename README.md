@@ -812,14 +812,6 @@ make check
 - **Active Contributor Community** with monthly releases
 - **Conference Talks** at data engineering and AI events
 
-### 📢 Get Involved
-
-- **🐛 Report Issues**: Help us improve by reporting bugs
-- **💡 Feature Requests**: Share your ideas for new capabilities  
-- **🔧 Contribute Code**: Join our development community
-- **📝 Documentation**: Help improve our docs and tutorials
-- **💬 Community**: Join discussions and help other users
-
 ---
 
 ## 📄 License
@@ -860,7 +852,3 @@ Built with ❤️ using:
 - **[uv](https://github.com/astral-sh/uv)** - Ultra-fast Python package manager
 
 ---
-
-## 🚀 Made by the Motiflow Team
-
-[🌐 Website](https://motiflow.dev) • [📚 Docs](https://docs.motiflow.dev) • [💬 Discord](https://discord.gg/motiflow)
