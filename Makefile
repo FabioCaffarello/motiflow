@@ -15,6 +15,11 @@ INFRA_DIR = infra/docker
 DOCKER_COMPOSE = docker compose -f $(INFRA_DIR)/docker-compose.yaml
 DOCKER_ENV = $(INFRA_DIR)/.env
 
+# Python optimization environment variables
+export PYTHONDONTWRITEBYTECODE = 1
+export PYTHONUNBUFFERED = 1
+export UV_NO_CACHE = 0
+
 # Colors for output
 RED = \033[0;31m
 GREEN = \033[0;32m
@@ -61,9 +66,22 @@ install-workflows: ## ⚙️ Install workflow engine dependencies
 
 install-infra: ## 🐳 Setup Docker infrastructure
 	@echo "$(CYAN)🐳 Setting up Docker infrastructure...$(NC)"
+	@echo "$(YELLOW)🔍 Checking uv availability...$(NC)"
+	@if ! command -v uv >/dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  uv not found. Installing uv...$(NC)"; \
+		curl -LsSf https://astral.sh/uv/install.sh | sh; \
+		echo "$(GREEN)✅ uv installed$(NC)"; \
+	else \
+		echo "$(GREEN)✅ uv is available$(NC)"; \
+	fi
 	@if [ ! -f $(DOCKER_ENV) ]; then \
 		echo "$(YELLOW)⚠️  Creating .env file from template...$(NC)"; \
-		cp $(DOCKER_ENV).example $(DOCKER_ENV) 2>/dev/null || echo "MINIO_USERNAME=minio\nMINIO_PASSWORD=minio123\nAWS_ACCESS_KEY_ID=minio\nAWS_SECRET_ACCESS_KEY=minio123" > $(DOCKER_ENV); \
+		if [ -f $(DOCKER_ENV).example ]; then \
+			cp $(DOCKER_ENV).example $(DOCKER_ENV) && \
+			sed -i '' '/# Copy this file to \.env and adjust values as needed/d' $(DOCKER_ENV); \
+		else \
+			echo "MINIO_USERNAME=minio\nMINIO_PASSWORD=minio123\nAWS_ACCESS_KEY_ID=minio\nAWS_SECRET_ACCESS_KEY=minio123\nMINIO_ACCESS_KEY=minio\nMINIO_SECRET_KEY=minio123" > $(DOCKER_ENV); \
+		fi; \
 	fi
 	@echo "$(GREEN)✅ Infrastructure setup complete$(NC)"
 
@@ -71,11 +89,13 @@ install-infra: ## 🐳 Setup Docker infrastructure
 # Development
 # =============================================================================
 
+# TODO: test
 dev: ## 🚀 Start full development environment
 	@echo "$(GREEN)🚀 Starting full development environment...$(NC)"
 	@$(MAKE) start-infra
 	@$(MAKE) dev-parallel
 
+# TODO: test
 dev-parallel: ## 🔄 Run web and workflows in parallel development mode
 	@echo "$(BLUE)🔄 Starting parallel development servers...$(NC)"
 	@trap 'kill 0' INT; \
@@ -83,6 +103,7 @@ dev-parallel: ## 🔄 Run web and workflows in parallel development mode
 	(cd $(WORKFLOWS_DIR) && npm run dev) & \
 	wait
 
+# FIXME: need to change the port 3000 to 4000
 dev-web: ## 🌐 Start web application in development mode
 	@echo "$(BLUE)🌐 Starting web development server...$(NC)"
 	@cd $(WEB_DIR) && npm run dev
@@ -112,10 +133,10 @@ build-workflows: ## ⚙️ Build workflow engine
 	@cd $(WORKFLOWS_DIR) && npm run build
 	@echo "$(GREEN)✅ Workflow engine built$(NC)"
 
-build-spark: ## ⚡ Build Spark Docker images
-	@echo "$(PURPLE)⚡ Building Spark Docker images...$(NC)"
-	@$(DOCKER_COMPOSE) build spark-master spark-worker-1 spark-worker-2 spark-connect
-	@echo "$(GREEN)✅ Spark images built$(NC)"
+build-spark: ## ⚡ Build Spark Connect Docker image
+	@echo "$(PURPLE)⚡ Building Spark Connect Docker image...$(NC)"
+	@$(DOCKER_COMPOSE) build spark-connect
+	@echo "$(GREEN)✅ Spark Connect image built$(NC)"
 
 # =============================================================================
 # Testing
@@ -125,6 +146,7 @@ test: ## 🧪 Run all tests
 	@echo "$(GREEN)🧪 Running all tests...$(NC)"
 	@$(MAKE) test-web
 	@$(MAKE) test-workflows
+	@$(MAKE) test-spark-infra
 
 test-web: ## 🌐 Run web application tests
 	@echo "$(BLUE)🌐 Running web tests...$(NC)"
@@ -133,6 +155,29 @@ test-web: ## 🌐 Run web application tests
 test-workflows: ## ⚙️ Run workflow engine tests
 	@echo "$(PURPLE)⚙️ Running workflow tests...$(NC)"
 	@cd $(WORKFLOWS_DIR) && npm test 2>/dev/null || echo "$(YELLOW)⚠️  No tests configured for workflows$(NC)"
+
+# FIXME: might need to adjust spark up as dependency
+test-spark-infra: ## ⚡ Test Spark Connect infrastructure
+	@echo "$(PURPLE)⚡ Testing Spark Connect infrastructure...$(NC)"
+	@if [ ! -d "infra-testing/spark" ]; then \
+		echo "$(RED)❌ Spark infrastructure test directory not found$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)🧪 Running Spark Connect tests with uv...$(NC)"
+	@cd infra-testing/spark && \
+	trap 'rm -rf .uv_tmp __pycache__ *.pyc 2>/dev/null || true' EXIT && \
+	uv run --no-project main.py
+	@echo "$(GREEN)✅ Spark infrastructure tests completed$(NC)"
+
+# FIXME: might need to adjust spark up as dependency
+test-spark-connect: ## ⚡ Quick Spark Connect connectivity test
+	@echo "$(PURPLE)⚡ Testing Spark Connect connectivity...$(NC)"
+	@if ! curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then \
+		echo "$(RED)❌ Spark Connect server not accessible on port 15002$(NC)"; \
+		echo "$(YELLOW)💡 Run 'make start-spark' to start Spark Connect server$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✅ Spark Connect server is accessible$(NC)"
 
 # =============================================================================
 # Code Quality
@@ -147,6 +192,7 @@ lint-web: ## 🌐 Lint web application
 	@echo "$(BLUE)🌐 Linting web application...$(NC)"
 	@cd $(WEB_DIR) && npm run lint
 
+# FIXME: need to add a lint command
 lint-workflows: ## ⚙️ Lint workflow engine
 	@echo "$(PURPLE)⚙️ Linting workflows...$(NC)"
 	@cd $(WORKFLOWS_DIR) && npm run lint 2>/dev/null || echo "$(YELLOW)⚠️  No linting configured for workflows$(NC)"
@@ -175,15 +221,17 @@ start-minio: ## 🗄️ Start only MinIO services
 	@$(DOCKER_COMPOSE) up -d minio mc
 	@echo "$(GREEN)✅ MinIO services started$(NC)"
 
-start-spark: ## ⚡ Start only Spark cluster services
-	@echo "$(PURPLE)⚡ Starting Spark cluster...$(NC)"
-	@$(DOCKER_COMPOSE) up -d --build spark-master spark-worker-1 spark-worker-2 spark-connect
-	@echo "$(GREEN)✅ Spark cluster started$(NC)"
+start-spark: ## ⚡ Start only Spark Connect services
+	@echo "$(PURPLE)⚡ Starting Spark Connect...$(NC)"
+	@$(DOCKER_COMPOSE) up -d --build spark-connect
+	@echo "$(GREEN)✅ Spark Connect started$(NC)"
+	@echo "$(YELLOW)💡 Spark Connect available at: spark://localhost:15002$(NC)"
+	@echo "$(YELLOW)💡 Spark UI will be available at: http://localhost:4040-4045$(NC)"
 
-start-spark-nobuild: ## ⚡ Start Spark cluster without building
-	@echo "$(PURPLE)⚡ Starting Spark cluster (no build)...$(NC)"
-	@$(DOCKER_COMPOSE) up -d spark-master spark-worker-1 spark-worker-2 spark-connect
-	@echo "$(GREEN)✅ Spark cluster started$(NC)"
+start-spark-nobuild: ## ⚡ Start Spark Connect without building
+	@echo "$(PURPLE)⚡ Starting Spark Connect (no build)...$(NC)"
+	@$(DOCKER_COMPOSE) up -d spark-connect
+	@echo "$(GREEN)✅ Spark Connect started$(NC)"
 
 stop-infra: ## 🛑 Stop Docker infrastructure
 	@echo "$(CYAN)🛑 Stopping Docker infrastructure...$(NC)"
@@ -195,10 +243,10 @@ stop-minio: ## 🛑 Stop MinIO services
 	@$(DOCKER_COMPOSE) stop minio mc
 	@echo "$(GREEN)✅ MinIO services stopped$(NC)"
 
-stop-spark: ## 🛑 Stop Spark cluster
-	@echo "$(PURPLE)🛑 Stopping Spark cluster...$(NC)"
-	@$(DOCKER_COMPOSE) stop spark-master spark-worker-1 spark-worker-2 spark-connect
-	@echo "$(GREEN)✅ Spark cluster stopped$(NC)"
+stop-spark: ## 🛑 Stop Spark Connect
+	@echo "$(PURPLE)🛑 Stopping Spark Connect...$(NC)"
+	@$(DOCKER_COMPOSE) stop spark-connect
+	@echo "$(GREEN)✅ Spark Connect stopped$(NC)"
 
 restart-infra: ## 🔄 Restart Docker infrastructure
 	@$(MAKE) stop-infra
@@ -208,6 +256,9 @@ restart-spark: ## 🔄 Restart Spark cluster
 	@$(MAKE) stop-spark
 	@$(MAKE) start-spark
 
+# FIXME: ⏳ Waiting for Spark Connect... (29/30) 
+# ⏳ Waiting for Spark Connect... (30/30) 
+# ⚠️  Spark Connect may still be starting 
 wait-for-services: ## ⏳ Wait for services to be ready
 	@echo "$(YELLOW)⏳ Waiting for services to be ready...$(NC)"
 	@sleep 5
@@ -224,16 +275,16 @@ wait-for-services: ## ⏳ Wait for services to be ready
 			exit 1; \
 		fi; \
 	done
-	@echo "$(YELLOW)⏳ Checking Spark Master...$(NC)"
+	@echo "$(YELLOW)⏳ Checking Spark Connect...$(NC)"
 	@for i in {1..30}; do \
-		if curl -s http://localhost:9095 >/dev/null 2>&1; then \
-			echo "$(GREEN)✅ Spark Master is ready!$(NC)"; \
+		if curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then \
+			echo "$(GREEN)✅ Spark Connect is ready!$(NC)"; \
 			break; \
 		fi; \
-		echo "$(YELLOW)⏳ Waiting for Spark Master... ($$i/30)$(NC)"; \
+		echo "$(YELLOW)⏳ Waiting for Spark Connect... ($$i/30)$(NC)"; \
 		sleep 3; \
 		if [ $$i -eq 30 ]; then \
-			echo "$(YELLOW)⚠️  Spark Master may still be starting$(NC)"; \
+			echo "$(YELLOW)⚠️  Spark Connect may still be starting$(NC)"; \
 			break; \
 		fi; \
 	done
@@ -248,10 +299,12 @@ start: ## 🚀 Start all services in production mode
 	@$(MAKE) start-web-prod
 	@$(MAKE) start-workflows-prod
 
+# TODO:	test
 start-web-prod: ## 🌐 Start web application in production mode
 	@echo "$(BLUE)🌐 Starting web in production mode...$(NC)"
 	@cd $(WEB_DIR) && npm start
 
+# TODO:	test
 start-workflows-prod: ## ⚙️ Start workflow engine in production mode
 	@echo "$(PURPLE)⚙️ Starting workflows in production mode...$(NC)"
 	@cd $(WORKFLOWS_DIR) && npm start 2>/dev/null || echo "$(YELLOW)⚠️  No production start script$(NC)"
@@ -269,21 +322,14 @@ restart: ## 🔄 Restart all services
 # =============================================================================
 # Monitoring & Logs
 # =============================================================================
-
 logs: ## 📋 Show all infrastructure logs
 	@$(DOCKER_COMPOSE) logs -f
 
 logs-minio: ## 📋 Show MinIO logs
 	@$(DOCKER_COMPOSE) logs -f minio
 
-logs-spark: ## 📋 Show Spark cluster logs
-	@$(DOCKER_COMPOSE) logs -f spark-master spark-worker-1 spark-worker-2 spark-connect
-
-logs-spark-master: ## 📋 Show Spark Master logs
-	@$(DOCKER_COMPOSE) logs -f spark-master
-
-logs-spark-workers: ## 📋 Show Spark Workers logs
-	@$(DOCKER_COMPOSE) logs -f spark-worker-1 spark-worker-2
+logs-spark: ## 📋 Show Spark Connect logs
+	@$(DOCKER_COMPOSE) logs -f spark-connect
 
 status: ## 📊 Show status of all services
 	@echo "$(CYAN)📊 Service Status$(NC)"
@@ -306,11 +352,12 @@ status: ## 📊 Show status of all services
 	fi
 	@echo ""
 	@echo "$(BLUE)🌍 Service Endpoints:$(NC)"
-	@echo "  • Web App:       http://localhost:3000"
-	@echo "  • MinIO API:     http://localhost:9000"
-	@echo "  • MinIO UI:      http://localhost:9001"
-	@echo "  • Spark Master:  http://localhost:9095"
-	@echo "  • Spark Connect: spark://localhost:7077"
+	@echo "  • Web App:        http://localhost:4000"
+	@echo "  • Motia UI:       http://localhost:3000"
+	@echo "  • MinIO API:      http://localhost:9000"
+	@echo "  • MinIO UI:       http://localhost:9001"
+	@echo "  • Spark Connect:  sc://localhost:15002"
+	@echo "  • Spark UI:       http://localhost:4040-4045"
 
 # =============================================================================
 # Cleaning
@@ -320,6 +367,7 @@ clean: ## 🧹 Clean all build artifacts and dependencies
 	@echo "$(RED)🧹 Cleaning all build artifacts...$(NC)"
 	@$(MAKE) clean-web
 	@$(MAKE) clean-workflows
+	@$(MAKE) clean-python
 	@$(MAKE) clean-docker
 	@echo "$(GREEN)✅ All cleaned!$(NC)"
 
@@ -333,35 +381,24 @@ clean-workflows: ## ⚙️ Clean workflow engine
 	@cd $(WORKFLOWS_DIR) && npm run clean 2>/dev/null || rm -rf dist node_modules .motia .mermaid package-lock.json
 	@echo "$(GREEN)✅ Workflows cleaned$(NC)"
 
+clean-python: ## 🐍 Clean Python cache, temporary files and uv artifacts
+	@echo "$(PURPLE)🧹 Cleaning Python temporary files and caches...$(NC)"
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
+	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".uv_tmp" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name "venv" -path "*/infra-testing/*" -exec rm -rf {} + 2>/dev/null || true
+	@uv cache clean 2>/dev/null || true
+	@echo "$(GREEN)✅ Python artifacts cleaned$(NC)"
+
 clean-docker: ## 🐳 Clean Docker data and containers
 	@echo "$(CYAN)🧹 Cleaning Docker infrastructure...$(NC)"
 	@$(DOCKER_COMPOSE) down -v --remove-orphans
 	@docker system prune -f
 	@echo "$(YELLOW)⚠️  Note: This will remove Spark cluster state and checkpoints$(NC)"
 	@echo "$(GREEN)✅ Docker cleaned$(NC)"
-
-# =============================================================================
-# Backup & Restore
-# =============================================================================
-
-backup: ## 💾 Backup MinIO data
-	@echo "$(CYAN)💾 Creating backup...$(NC)"
-	@mkdir -p backups
-	@docker run --rm -v minio-data:/data -v $(PWD)/backups:/backup alpine tar czf /backup/minio-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz -C /data .
-	@echo "$(GREEN)✅ Backup created in ./backups/$(NC)"
-
-restore: ## 📥 Restore MinIO data (requires BACKUP_FILE variable)
-	@if [ -z "$(BACKUP_FILE)" ]; then \
-		echo "$(RED)❌ Please specify BACKUP_FILE=path/to/backup.tar.gz$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(CYAN)📥 Restoring from $(BACKUP_FILE)...$(NC)"
-	@$(MAKE) stop-infra
-	@docker volume rm minio-data 2>/dev/null || true
-	@docker volume create minio-data
-	@docker run --rm -v minio-data:/data -v $(PWD)/backups:/backup alpine tar xzf /backup/$(BACKUP_FILE) -C /data
-	@$(MAKE) start-infra
-	@echo "$(GREEN)✅ Restore completed$(NC)"
 
 # =============================================================================
 # Deployment
@@ -392,6 +429,7 @@ setup-dev: ## 🛠️ Complete development environment setup
 	@$(MAKE) install
 	@$(MAKE) build
 	@$(MAKE) start-infra
+	@$(MAKE) cleanup-temp
 	@echo "$(GREEN)✅ Development environment ready! Run 'make dev' to start.$(NC)"
 
 doctor: ## 🔍 Check system health and requirements
@@ -405,60 +443,88 @@ doctor: ## 🔍 Check system health and requirements
 	@docker --version 2>/dev/null || echo "$(RED)❌ Not installed$(NC)"
 	@echo -n "$(BLUE)Docker Compose: $(NC)"
 	@docker-compose --version 2>/dev/null || echo "$(RED)❌ Not installed$(NC)"
+	@echo -n "$(BLUE)Python3: $(NC)"
+	@python3 --version 2>/dev/null || echo "$(RED)❌ Not installed$(NC)"
+	@echo -n "$(BLUE)uv (Python package manager): $(NC)"
+	@uv --version 2>/dev/null || echo "$(RED)❌ Not installed - install: curl -LsSf https://astral.sh/uv/install.sh | sh$(NC)"
 	@echo ""
 	@echo "$(BLUE)Project Dependencies:$(NC)"
 	@if [ -d "$(WEB_DIR)/node_modules" ]; then echo "$(GREEN)✅ Web dependencies$(NC)"; else echo "$(RED)❌ Web dependencies - run 'make install-web'$(NC)"; fi
 	@if [ -d "$(WORKFLOWS_DIR)/node_modules" ]; then echo "$(GREEN)✅ Workflow dependencies$(NC)"; else echo "$(RED)❌ Workflow dependencies - run 'make install-workflows'$(NC)"; fi
+	@if [ -d "infra-testing/spark" ]; then echo "$(GREEN)✅ Spark test environment$(NC)"; else echo "$(RED)❌ Spark test environment - directory missing$(NC)"; fi
+	@if [ -d "infra-testing/spark" ] && [ -f "infra-testing/spark/pyproject.toml" ]; then echo "$(GREEN)✅ Spark test dependencies configured$(NC)"; else echo "$(YELLOW)⚠️  Spark test pyproject.toml - check infra-testing/spark/$(NC)"; fi
 	@echo ""
 	@echo "$(BLUE)Infrastructure Services:$(NC)"
 	@if curl -s http://localhost:9000/minio/health/live >/dev/null 2>&1; then echo "$(GREEN)✅ MinIO running$(NC)"; else echo "$(RED)❌ MinIO not running - run 'make start-minio'$(NC)"; fi
-	@if curl -s http://localhost:9095 >/dev/null 2>&1; then echo "$(GREEN)✅ Spark Master running$(NC)"; else echo "$(RED)❌ Spark Master not running - run 'make start-spark'$(NC)"; fi
+	@if curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then echo "$(GREEN)✅ Spark Connect running$(NC)"; else echo "$(RED)❌ Spark Connect not running - run 'make start-spark'$(NC)"; fi
+	@echo ""
+	@echo "$(BLUE)Quick Start Commands:$(NC)"
+	@echo "  • Full setup:     make setup-dev"
+	@echo "  • Start infra:    make start-infra"
+	@echo "  • Test Spark:     make test-spark-infra"
+	@echo "  • Clean Python:   make clean-python"
+	@echo "  • Start dev:      make dev"
 
 # =============================================================================
-# Spark Management
+# Cleanup & Optimization
 # =============================================================================
 
-spark-shell: ## ⚡ Open Spark shell in master container
-	@echo "$(PURPLE)⚡ Opening Spark shell...$(NC)"
-	@$(DOCKER_COMPOSE) exec spark-master spark-shell --master spark://spark-master:7077
+cleanup-temp: ## 🧹 Quick cleanup of temporary files (non-destructive)
+	@echo "$(YELLOW)🧹 Cleaning temporary files...$(NC)"
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@find . -type d -name ".uv_tmp" -exec rm -rf {} + 2>/dev/null || true
+	@echo "$(GREEN)✅ Temporary files cleaned$(NC)"
 
-spark-submit: ## ⚡ Submit Spark application (requires APP variable)
-	@if [ -z "$(APP)" ]; then \
-		echo "$(RED)❌ Please specify APP=path/to/app.py$(NC)"; \
-		exit 1; \
-	fi
-	@echo "$(PURPLE)⚡ Submitting Spark application $(APP)...$(NC)"
-	@$(DOCKER_COMPOSE) exec spark-master spark-submit --master spark://spark-master:7077 $(APP)
+# =============================================================================
+# Spark Connect Management  
+# =============================================================================
+# FIXME: Need to adjust commands for Spark Connect usage
+spark-connect-shell: ## ⚡ Connect to Spark using PySpark shell
+	@echo "$(PURPLE)⚡ Opening PySpark shell connected to Spark Connect...$(NC)"
+	@echo "$(YELLOW) Use: spark = SparkSession.builder.remote('sc://localhost:15002').getOrCreate()$(NC)"
+	@cd infra-testing/spark && \
+	trap 'rm -rf .uv_tmp __pycache__ *.pyc 2>/dev/null || true' EXIT && \
+	uv run --no-project python3 -c "from pyspark.sql import SparkSession; print('🚀 PySpark shell with uv - ready!'); import code; code.interact(local=locals())"
 
-spark-sql: ## ⚡ Open Spark SQL shell
-	@echo "$(PURPLE)⚡ Opening Spark SQL shell...$(NC)"
-	@$(DOCKER_COMPOSE) exec spark-master spark-sql --master spark://spark-master:7077
-
-spark-pyspark: ## ⚡ Open PySpark shell
-	@echo "$(PURPLE)⚡ Opening PySpark shell...$(NC)"
-	@$(DOCKER_COMPOSE) exec spark-master pyspark --master spark://spark-master:7077
-
-spark-status: ## 📊 Show Spark cluster status
-	@echo "$(PURPLE)📊 Spark Cluster Status$(NC)"
+spark-connect-status: ## 📊 Check Spark Connect server status
+	@echo "$(PURPLE)📊 Spark Connect Status$(NC)"
 	@echo "========================"
-	@echo "$(BLUE)Checking Spark Master...$(NC)"
-	@if curl -s http://localhost:9095 >/dev/null 2>&1; then \
-		echo "$(GREEN)✅ Spark Master UI available at http://localhost:9095$(NC)"; \
+	@echo "$(BLUE)Checking Spark Connect server...$(NC)"
+	@if curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then \
+		echo "$(GREEN)✅ Spark Connect server is running on port 15002$(NC)"; \
 	else \
-		echo "$(RED)❌ Spark Master UI not accessible$(NC)"; \
+		echo "$(RED)❌ Spark Connect server not accessible on port 15002$(NC)"; \
+		echo "$(YELLOW)💡 Run 'make start-spark' to start the server$(NC)"; \
 	fi
 	@echo ""
-	@echo "$(BLUE)Docker Containers:$(NC)"
-	@$(DOCKER_COMPOSE) ps spark-master spark-worker-1 spark-worker-2 spark-connect 2>/dev/null || echo "$(RED)❌ Spark services not running$(NC)"
-
-spark-scale-workers: ## ⚡ Scale Spark workers (requires WORKERS variable, e.g., WORKERS=3)
-	@if [ -z "$(WORKERS)" ]; then \
-		echo "$(RED)❌ Please specify WORKERS=number (e.g., WORKERS=3)$(NC)"; \
-		exit 1; \
+	@echo "$(BLUE)Docker Container Status:$(NC)"
+	@$(DOCKER_COMPOSE) ps spark-connect 2>/dev/null || echo "$(RED)❌ Spark Connect container not running$(NC)"
+	@echo ""
+	@echo "$(BLUE)MinIO Integration:$(NC)"
+	@if curl -s http://localhost:9000/minio/health/live >/dev/null 2>&1; then \
+		echo "$(GREEN)✅ MinIO is running and accessible$(NC)"; \
+	else \
+		echo "$(RED)❌ MinIO not accessible - run 'make start-minio'$(NC)"; \
 	fi
-	@echo "$(PURPLE)⚡ Scaling Spark workers to $(WORKERS)...$(NC)"
-	@$(DOCKER_COMPOSE) up -d --scale spark-worker-1=$(WORKERS)
-	@echo "$(GREEN)✅ Spark workers scaled to $(WORKERS)$(NC)"
+
+spark-submit-test: ## ⚡ Submit our infrastructure test to Spark Connect
+	@echo "$(PURPLE)⚡ Submitting infrastructure test to Spark Connect...$(NC)"
+	@$(MAKE) test-spark-infra
+
+spark-connect-logs-follow: ## 📋 Follow Spark Connect logs in real-time
+	@echo "$(PURPLE)📋 Following Spark Connect logs...$(NC)"
+	@$(DOCKER_COMPOSE) logs -f spark-connect
+
+spark-connect-exec: ## 💻 Execute command in Spark Connect container
+	@echo "$(PURPLE)💻 Opening shell in Spark Connect container...$(NC)"
+	@$(DOCKER_COMPOSE) exec spark-connect bash
+
+spark-pyspark: ## ⚡ Open PySpark shell connected to Spark Connect
+	@$(MAKE) spark-connect-shell
+
+spark-status: ## 📊 Show Spark Connect status
+	@$(MAKE) spark-connect-status
 
 spark-rebuild: ## ⚡ Rebuild and restart Spark cluster
 	@echo "$(PURPLE)⚡ Rebuilding Spark cluster...$(NC)"
@@ -466,18 +532,6 @@ spark-rebuild: ## ⚡ Rebuild and restart Spark cluster
 	@$(MAKE) build-spark
 	@$(MAKE) start-spark-nobuild
 	@echo "$(GREEN)✅ Spark cluster rebuilt and restarted$(NC)"
-
-# =============================================================================
-# Development Environment with Spark
-# =============================================================================
-
-dev-spark: ## 🚀 Start development environment with Spark focus
-	@echo "$(GREEN)🚀 Starting development environment with Spark...$(NC)"
-	@$(MAKE) start-spark
-	@$(MAKE) start-minio
-	@echo "$(GREEN)✅ Spark development environment ready!$(NC)"
-	@echo "$(YELLOW)💡 Access Spark Master UI: http://localhost:9095$(NC)"
-	@echo "$(YELLOW)💡 Connect to cluster: spark://localhost:7077$(NC)"
 
 # =============================================================================
 # Advanced
@@ -492,13 +546,19 @@ open-minio: ## 🌐 Open MinIO console in browser
 	@echo "$(CYAN)🌐 Opening MinIO console...$(NC)"
 	@open http://localhost:9001 2>/dev/null || echo "Visit http://localhost:9001"
 
-open-spark: ## 🌐 Open Spark Master UI in browser
-	@echo "$(PURPLE)🌐 Opening Spark Master UI...$(NC)"
-	@open http://localhost:9095 2>/dev/null || echo "Visit http://localhost:9095"
+open-spark: ## 🌐 Open Spark UI in browser (when available)
+	@echo "$(PURPLE)🌐 Opening Spark UI...$(NC)"
+	@echo "$(YELLOW)💡 Spark UI available when jobs are running: http://localhost:4040-4045$(NC)"
+	@open http://localhost:4040 2>/dev/null || echo "Visit http://localhost:4040 when Spark jobs are running"
 
 open-web: ## 🌐 Open web application in browser
 	@echo "$(BLUE)🌐 Opening web application...$(NC)"
-	@open http://localhost:3000 2>/dev/null || echo "Visit http://localhost:3000"
+	@open http://localhost:4000 2>/dev/null || echo "Visit http://localhost:4000"
+
+open-workflows: ## 🌐 Open Motia UI for workflows
+	@echo "$(PURPLE)🌐 Opening Motia UI for workflows...$(NC)"
+	@echo "$(YELLOW)💡 Motia UI available at: http://localhost:4000$(NC)"
+	@open http://localhost:4000 2>/dev/null || echo "Visit http://localhost:4000"
 
 shell-web: ## 💻 Open shell in web container
 	@echo "$(BLUE)💻 Opening shell in web directory...$(NC)"
@@ -516,6 +576,10 @@ up: start-infra ## 🚀 Alias for start-infra
 down: stop-infra ## 🛑 Alias for stop-infra
 web: dev-web ## 🌐 Alias for dev-web
 workflows: dev-workflows ## ⚙️ Alias for dev-workflows
-spark: dev-spark ## ⚡ Alias for dev-spark
-pyspark: spark-pyspark ## 🐍 Alias for spark-pyspark
+pyspark: spark-connect-shell ## 🐍 Alias for spark-connect-shell
 spark-ui: open-spark ## 🌐 Alias for open-spark
+test-spark: test-spark-infra ## 🧪 Alias for test-spark-infra
+spark-logs: logs-spark ## 📋 Alias for logs-spark
+spark-shell: spark-connect-shell ## ⚡ Alias for spark-connect-shell
+cleanup: cleanup-temp ## 🧹 Alias for cleanup-temp
+clean-py: clean-python ## 🐍 Alias for clean-python
