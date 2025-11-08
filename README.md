@@ -80,11 +80,11 @@ motiflow/
 │   ├── steps/                    # Workflow step definitions
 │   └── python_modules/           # Python virtual environment (uv)
 ├── 🐳 infra/docker/              # Infrastructure as Code
-│   ├── docker-compose.yaml      # Service orchestration
+│   ├── docker-compose.yaml       # Service orchestration
 │   ├── images/spark/             # Apache Spark Connect container
 │   └── scripts/                  # Deployment & health check utilities
 ├── 🧪 infra-testing/spark/       # Spark Connect testing environment
-├── 📊 datasets-examples/                  # Sample datasets for testing and demos
+├── 📊 datasets-examples/         # Sample datasets for testing and demos
 │   ├── employees.csv             # HR data (20 records)
 │   ├── sales.csv                 # Sales transactions (20 records)
 │   ├── metrics.csv               # Business KPIs (20 records)
@@ -100,9 +100,9 @@ motiflow/
 
 ### Prerequisites
 
-- **Node.js** 18+ and npm
+- **Node.js** 22+ and npm
 - **Docker** and Docker Compose
-- **Python** 3.11+ (for Spark workflows)
+- **Python** 3.12+ (for Spark workflows)
 - **uv** Python package manager (auto-installed if missing)
 - **Git** for version control
 
@@ -110,7 +110,7 @@ motiflow/
 
 ```bash
 # Clone the repository
-git clone <repository-url> motiflow
+git clone https://github.com/FabioCaffarello/motiflow
 cd motiflow
 
 # Complete development environment setup
