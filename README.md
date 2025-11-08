@@ -9,6 +9,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?style=flat-square&logo=docker)](https://docker.com/)
 [![MinIO](https://img.shields.io/badge/MinIO-S3%20Compatible-red?style=flat-square&logo=minio)](https://min.io/)
 [![Educational](https://img.shields.io/badge/Purpose-Learning%20%26%20Research-green?style=flat-square&logo=academia)](https://github.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](./LICENSE)
 
 **Upcoming Technologies:**
 [![Rust](https://img.shields.io/badge/Rust-Data%20Generation-orange?style=flat-square&logo=rust)](https://rust-lang.org/)
