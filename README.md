@@ -9,6 +9,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?style=flat-square&logo=docker)](https://docker.com/)
 [![MinIO](https://img.shields.io/badge/MinIO-S3%20Compatible-red?style=flat-square&logo=minio)](https://min.io/)
 [![Educational](https://img.shields.io/badge/Purpose-Learning%20%26%20Research-green?style=flat-square&logo=academia)](https://github.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](./LICENSE)
 
 **Upcoming Technologies:**
 [![Rust](https://img.shields.io/badge/Rust-Data%20Generation-orange?style=flat-square&logo=rust)](https://rust-lang.org/)
@@ -18,7 +19,7 @@
 [![Kafka](https://img.shields.io/badge/Apache%20Kafka-Streaming-red?style=flat-square&logo=apache-kafka)](https://kafka.apache.org/)
 
 > 🎓 **Educational Repository**: A comprehensive learning platform for modern data engineering, combining AI-driven interfaces with enterprise-grade analytics tools. Perfect for students, data engineers, and anyone looking to master cutting-edge data technologies through hands-on experimentation.
-
+>
 > 🔬 **Research Focus**: Explore data lake architectures, streaming analytics, MLOps pipelines, and emerging technologies like synthetic data generation with Rust, Dremio query acceleration, and Nessie data versioning.
 
 ---
@@ -80,11 +81,11 @@ motiflow/
 │   ├── steps/                    # Workflow step definitions
 │   └── python_modules/           # Python virtual environment (uv)
 ├── 🐳 infra/docker/              # Infrastructure as Code
-│   ├── docker-compose.yaml      # Service orchestration
+│   ├── docker-compose.yaml       # Service orchestration
 │   ├── images/spark/             # Apache Spark Connect container
 │   └── scripts/                  # Deployment & health check utilities
 ├── 🧪 infra-testing/spark/       # Spark Connect testing environment
-├── 📊 datasets-examples/                  # Sample datasets for testing and demos
+├── 📊 datasets-examples/         # Sample datasets for testing and demos
 │   ├── employees.csv             # HR data (20 records)
 │   ├── sales.csv                 # Sales transactions (20 records)
 │   ├── metrics.csv               # Business KPIs (20 records)
@@ -100,9 +101,9 @@ motiflow/
 
 ### Prerequisites
 
-- **Node.js** 18+ and npm
+- **Node.js** 22+ and npm
 - **Docker** and Docker Compose
-- **Python** 3.11+ (for Spark workflows)
+- **Python** 3.12+ (for Spark workflows)
 - **uv** Python package manager (auto-installed if missing)
 - **Git** for version control
 
@@ -110,7 +111,7 @@ motiflow/
 
 ```bash
 # Clone the repository
-git clone <repository-url> motiflow
+git clone https://github.com/FabioCaffarello/motiflow
 cd motiflow
 
 # Complete development environment setup
@@ -812,14 +813,6 @@ make check
 - **Active Contributor Community** with monthly releases
 - **Conference Talks** at data engineering and AI events
 
-### 📢 Get Involved
-
-- **🐛 Report Issues**: Help us improve by reporting bugs
-- **💡 Feature Requests**: Share your ideas for new capabilities  
-- **🔧 Contribute Code**: Join our development community
-- **📝 Documentation**: Help improve our docs and tutorials
-- **💬 Community**: Join discussions and help other users
-
 ---
 
 ## 📄 License
@@ -860,7 +853,3 @@ Built with ❤️ using:
 - **[uv](https://github.com/astral-sh/uv)** - Ultra-fast Python package manager
 
 ---
-
-## 🚀 Made by the Motiflow Team
-
-[🌐 Website](https://motiflow.dev) • [📚 Docs](https://docs.motiflow.dev) • [💬 Discord](https://discord.gg/motiflow)
