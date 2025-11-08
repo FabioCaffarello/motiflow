@@ -29,6 +29,9 @@ import {
   PromptInputActionMenuTrigger,
   PromptInputActionAddAttachments,
   PromptInputSpeechButton,
+  PromptInputAttachments,
+  PromptInputAttachment,
+  PromptInputHeader,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { GlobeIcon } from "lucide-react";
@@ -37,25 +40,97 @@ import { useRef, useState } from "react";
 export default function Home() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [useWebSearch, setUseWebSearch] = useState(false);
-  
+
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
     }),
   });
-  
-  const handleSubmit = (message: PromptInputMessage) => {
+
+  const handleSubmit = async (message: PromptInputMessage) => {
     const hasText = Boolean(message.text?.trim());
     const hasAttachments = Boolean(message.files?.length);
-    
+
     if (!(hasText || hasAttachments)) {
       return;
     }
-    
-    void sendMessage(
-      { 
-        text: message.text || "Sent with attachments",
-        files: message.files 
+
+    // If there are attachments, upload them to the test upload handler.
+    if (hasAttachments) {
+      try {
+        const form = new FormData();
+
+        // PromptInput provides FileUIPart objects (metadata + data-urls).
+        // Convert data/blob URLs to Blobs before appending to FormData so the server
+        // receives real file blobs.
+        for (const f of message.files ?? []) {
+          // Prefer url -> fetch -> blob for both data: and blob: URLs.
+          if (f.url && typeof f.url === "string") {
+            try {
+              const fetched = await fetch(f.url);
+              const blob = await fetched.blob();
+              form.append("files", blob, f.filename || "file");
+            } catch {
+              // If conversion fails, fallback to sending metadata as JSON
+              form.append(
+                "files_meta",
+                JSON.stringify({
+                  filename: f.filename,
+                  mediaType: f.mediaType,
+                  url: f.url,
+                })
+              );
+            }
+          } else {
+            // If for some reason we don't have a url, send the object as JSON
+            try {
+              form.append("files_meta", JSON.stringify(f));
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: form,
+        });
+
+        if (!res.ok) {
+          console.error("❌ Upload to MinIO failed:", await res.text());
+        } else {
+          const json = await res.json();
+          console.log("✅ Upload to MinIO success:", json);
+
+          // Store uploaded file info for the chat message
+          if (json.uploadedFiles && json.uploadedFiles.length > 0) {
+            // You can use this data to include MinIO URLs in the chat message later
+            console.log(
+              "📁 Files stored in MinIO:",
+              json.uploadedFiles.map((f: { url: string }) => f.url)
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+      }
+    }
+
+    const fileInfo = hasAttachments
+      ? `\n\n📎 Uploaded ${message.files?.length} file(s): ${message.files
+          ?.map((f) => f.filename || "unknown")
+          .join(", ")}`
+      : "";
+
+    const messageText = message.text
+      ? `${message.text}${fileInfo}`
+      : hasAttachments
+      ? `Sent with attachments${fileInfo}`
+      : "";
+
+    await sendMessage(
+      {
+        text: messageText,
       },
       {
         body: {
@@ -95,7 +170,9 @@ export default function Home() {
                             <ToolInput input={p.input} />
                             <ToolOutput
                               output={(p as { output?: unknown }).output}
-                              errorText={(p as { errorText?: string }).errorText}
+                              errorText={
+                                (p as { errorText?: string }).errorText
+                              }
                             />
                           </ToolContent>
                         </Tool>
@@ -110,15 +187,20 @@ export default function Home() {
           <ConversationScrollButton />
         </Conversation>
 
-        <PromptInput 
+        <PromptInput
           onSubmit={handleSubmit}
-          className="mt-4" 
-          globalDrop 
+          className="mt-4"
+          globalDrop
           multiple
         >
+          <PromptInputHeader>
+            <PromptInputAttachments>
+              {(attachment) => <PromptInputAttachment data={attachment} />}
+            </PromptInputAttachments>
+          </PromptInputHeader>
           <PromptInputBody>
-            <PromptInputTextarea 
-              placeholder="Type a message..." 
+            <PromptInputTextarea
+              placeholder="Type a message..."
               ref={textareaRef}
             />
           </PromptInputBody>
@@ -130,14 +212,12 @@ export default function Home() {
                   <PromptInputActionAddAttachments />
                 </PromptInputActionMenuContent>
               </PromptInputActionMenu>
-              
-              <PromptInputSpeechButton
-                textareaRef={textareaRef}
-              />
-              
+
+              <PromptInputSpeechButton textareaRef={textareaRef} />
+
               <PromptInputButton
                 onClick={() => setUseWebSearch(!useWebSearch)}
-                variant={useWebSearch ? 'default' : 'ghost'}
+                variant={useWebSearch ? "default" : "ghost"}
               >
                 <GlobeIcon size={16} />
                 <span>Search</span>
