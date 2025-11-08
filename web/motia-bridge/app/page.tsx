@@ -78,7 +78,7 @@ export default function Home() {
                   filename: f.filename,
                   mediaType: f.mediaType,
                   url: f.url,
-                })
+                }),
               );
             }
           } else {
@@ -107,7 +107,7 @@ export default function Home() {
             // You can use this data to include MinIO URLs in the chat message later
             console.log(
               "📁 Files stored in MinIO:",
-              json.uploadedFiles.map((f: { url: string }) => f.url)
+              json.uploadedFiles.map((f: { url: string }) => f.url),
             );
           }
         }
@@ -125,8 +125,8 @@ export default function Home() {
     const messageText = message.text
       ? `${message.text}${fileInfo}`
       : hasAttachments
-      ? `Sent with attachments${fileInfo}`
-      : "";
+        ? `Sent with attachments${fileInfo}`
+        : "";
 
     await sendMessage(
       {
@@ -136,7 +136,7 @@ export default function Home() {
         body: {
           webSearch: useWebSearch,
         },
-      }
+      },
     );
   };
 

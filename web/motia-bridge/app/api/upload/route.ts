@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const metas = form.getAll("files_meta");
 
     console.log(
-      `Received upload: files=${files.length}, metas=${metas.length}`
+      `Received upload: files=${files.length}, metas=${metas.length}`,
     );
 
     const uploadedFiles = [];
@@ -31,20 +31,20 @@ export async function POST(req: Request) {
         if (size > MAX_FILE_SIZE) {
           console.warn(
             `⚠️ File too large: ${originalName} (${(size / 1024 / 1024).toFixed(
-              2
-            )}MB > ${MAX_FILE_SIZE / 1024 / 1024}MB)`
+              2,
+            )}MB > ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
           );
           throw new Error(
             `File ${originalName} is too large. Maximum size is ${
               MAX_FILE_SIZE / 1024 / 1024
-            }MB`
+            }MB`,
           );
         }
 
         console.log(
           `📤 Processing file: ${originalName} (${(size / 1024 / 1024).toFixed(
-            2
-          )}MB) - ${f.type || "unknown type"}`
+            2,
+          )}MB) - ${f.type || "unknown type"}`,
         );
 
         // Detect file type for better handling
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
           f.type?.includes("archive");
         const isImage = f.type?.startsWith("image/");
         const isDocument = originalName.match(
-          /\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i
+          /\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i,
         );
         const isVideo = f.type?.startsWith("video/");
 
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
         // Generate unique filename to avoid conflicts
         const uniqueFileName = `${nanoid()}-${originalName.replace(
           /[^a-zA-Z0-9.-]/g,
-          "_"
+          "_",
         )}`;
         const objectKey = `uploads/${
           new Date().toISOString().split("T")[0]
@@ -81,8 +81,8 @@ export async function POST(req: Request) {
                 1024 /
                 1024
               ).toFixed(
-                2
-              )}MB). Consider multipart upload for optimal performance.`
+                2,
+              )}MB). Consider multipart upload for optimal performance.`,
             );
           }
 
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
                 "is-document": isDocument ? "true" : "false",
                 "is-video": isVideo ? "true" : "false",
               },
-            })
+            }),
           );
 
           console.log(`✅ Uploaded to MinIO: ${objectKey} (${size} bytes)`);
@@ -156,7 +156,7 @@ export async function POST(req: Request) {
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   } catch (err) {
     console.error("Upload handler error:", err);
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 }

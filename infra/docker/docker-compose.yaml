@@ -1,13 +1,3 @@
-x-spark-common: &spark-common
-  build:
-    context: ./images
-    dockerfile: Dockerfile.spark
-  volumes:
-    - ./.artefacts/spark/local-cluster/mnt/spark-checkpoints:/tmp/spark-checkpoints
-    - ./.artefacts/spark/local-cluster/mnt/spark-state:/tmp/spark-state
-  networks:
-    - motiflow-network
-
 services:
   minio:
     restart: always
@@ -40,42 +30,39 @@ services:
     networks:
       - motiflow-network
 
-  spark-master:
-    <<: *spark-common
-    container_name: spark-master
-    command: bin/spark-class org.apache.spark.deploy.master.Master
-    ports:
-      - "9095:8080"
-      - "7077:7077"
-
-  spark-worker-1: &spark-worker
-    <<: *spark-common
-    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    container_name: spark-worker-1
-    depends_on:
-      - spark-master
-    environment:
-      SPARK_MODE: worker
-      SPARK_WORKER_CORES: 1
-      SPARK_WORKER_MEMORY: 1g
-      SPARK_MASTER_URL: spark://spark-master:7077
-  
-  spark-worker-2:
-    <<: *spark-worker
-    container_name: spark-worker-2
-
   spark-connect:
-    <<: *spark-common
+    build:
+      context: ./images/spark
+      dockerfile: Dockerfile
     container_name: spark-connect
+    command:
+      - /opt/spark/sbin/start-connect-server.sh
+      - --packages
+      - org.apache.spark:spark-sql-kafka-0-10_2.13:4.0.1,org.apache.hadoop:hadoop-aws:3.3.6,com.amazonaws:aws-java-sdk-bundle:1.12.262,com.mysql:mysql-connector-j:8.0.33
+      - --conf
+      - spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+      - --conf
+      - spark.hadoop.fs.s3a.access.key=${MINIO_ACCESS_KEY}
+      - --conf
+      - spark.hadoop.fs.s3a.secret.key=${MINIO_SECRET_KEY}
     environment:
-      SPARK_MODE: driver
-      SPARK_MASTER: spark://spark-master:7077
+      - SPARK_NO_DAEMONIZE=true
+    ports:
+      - "15002:15002"
+      - "4040-4045:4040-4045"
+    volumes:
+      - spark-warehouse:/opt/spark/warehouse
+      - spark-checkpoints:/tmp/spark-checkpoints
     depends_on:
-      - spark-master
-    command: ["/bin/bash", "-c", "/opt/bitnami/spark/sbin/start-connect-server.sh --master spark://spark-master:7077 --packages org.apache.spark:spark-connect_2.12:3.5.5"]
+      - minio
+    networks:
+      - motiflow-network
 
 volumes:
   minio-data:
+  spark-warehouse:
+  spark-checkpoints:
+  conf:
 
 networks:
   motiflow-network:

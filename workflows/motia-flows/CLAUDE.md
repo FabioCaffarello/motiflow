@@ -10,7 +10,7 @@ This project has detailed development guides in **`.cursor/rules/`** directory. 
 
 ### For Claude Code Users
 
-**A pre-configured subagent is ready!** 
+**A pre-configured subagent is ready!**
 
 The `motia-developer` subagent in `.claude/agents/` automatically references all 10 cursor rules when coding.
 
@@ -23,7 +23,7 @@ Learn more: [Claude Code Subagents Docs](https://docs.claude.com/en/docs/claude-
 Explicitly reference cursor rules in your prompts:
 
 ```
-Read .cursor/rules/motia/api-steps.mdc and create an API endpoint 
+Read .cursor/rules/motia/api-steps.mdc and create an API endpoint
 for user registration following the patterns shown.
 ```
 
@@ -32,13 +32,16 @@ for user registration following the patterns shown.
 All guides in `.cursor/rules/` with **TypeScript, JavaScript, and Python** examples:
 
 **Step Types** (`.cursor/rules/motia/`):
+
 - `api-steps.mdc`, `event-steps.mdc`, `cron-steps.mdc`
 
 **Features** (`.cursor/rules/motia/`):
+
 - `state-management.mdc`, `middlewares.mdc`, `realtime-streaming.mdc`
 - `virtual-steps.mdc`, `ui-steps.mdc`
 
 **Architecture** (`.cursor/architecture/`):
+
 - `architecture.mdc`, `error-handling.mdc`
 
 ## Quick Reference

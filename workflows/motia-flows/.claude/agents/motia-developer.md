@@ -86,6 +86,7 @@ Before writing ANY Motia code, you MUST read the relevant cursor rules from `.cu
 ## Never Guess
 
 If you're unsure about any Motia pattern:
+
 1. Read the relevant cursor rule from the list above
 2. Check existing steps in the project
 3. Follow the examples in the guides exactly
