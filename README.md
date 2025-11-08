@@ -19,7 +19,7 @@
 [![Kafka](https://img.shields.io/badge/Apache%20Kafka-Streaming-red?style=flat-square&logo=apache-kafka)](https://kafka.apache.org/)
 
 > 🎓 **Educational Repository**: A comprehensive learning platform for modern data engineering, combining AI-driven interfaces with enterprise-grade analytics tools. Perfect for students, data engineers, and anyone looking to master cutting-edge data technologies through hands-on experimentation.
-
+>
 > 🔬 **Research Focus**: Explore data lake architectures, streaming analytics, MLOps pipelines, and emerging technologies like synthetic data generation with Rust, Dremio query acceleration, and Nessie data versioning.
 
 ---
