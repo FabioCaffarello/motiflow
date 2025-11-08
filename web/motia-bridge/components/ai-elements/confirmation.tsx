@@ -117,9 +117,9 @@ export const ConfirmationAccepted = ({
   // Only show when approved and in response states
   if (
     !approval?.approved ||
-  // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
+    // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
     (state !== "approval-responded" &&
-  // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
+      // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
       state !== "output-denied" &&
       state !== "output-available")
   ) {
@@ -141,9 +141,9 @@ export const ConfirmationRejected = ({
   // Only show when rejected and in response states
   if (
     approval?.approved !== false ||
-  // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
+    // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
     (state !== "approval-responded" &&
-  // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
+      // @ts-ignore - ai-sdk state types may include approval states not yet in type definitions
       state !== "output-denied" &&
       state !== "output-available")
   ) {

@@ -1,25 +1,35 @@
 # 🚀 Motiflow
 
-## Advanced AI-Powered Workflow Automation Platform
+## Advanced AI-Powered Workflow Automation Platform with Spark Analytics
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.0.1-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.0.3-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=flat-square&logo=typescript)](https://typescriptlang.org/)
 [![Motia](https://img.shields.io/badge/Motia-0.9.0--beta-purple?style=flat-square)](https://motia.dev/)
+[![Apache Spark](https://img.shields.io/badge/Apache%20Spark-4.0.1-orange?style=flat-square&logo=apache-spark)](https://spark.apache.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?style=flat-square&logo=docker)](https://docker.com/)
 [![MinIO](https://img.shields.io/badge/MinIO-S3%20Compatible-red?style=flat-square&logo=minio)](https://min.io/)
 
-> A comprehensive platform that combines AI-driven chat interfaces with powerful workflow automation, featuring file processing capabilities and seamless integration with modern development tools.
+> A comprehensive platform that combines AI-driven chat interfaces with powerful workflow automation, featuring advanced data processing with Apache Spark Connect, file management capabilities, and seamless integration with modern development tools.
 
 ---
 
 ## 🌟 Features
 
+### ⚡ Spark Analytics Engine
+
+- **Apache Spark 4.0.1** with Spark Connect for distributed data processing
+- **PySpark Integration** for Python-based data analytics
+- **MinIO S3 Integration** for scalable data storage
+- **Real-time Processing** with streaming capabilities
+- **Jupyter-style Workflows** for interactive data science
+
 ### 🤖 AI-Powered Chat Interface
 
-- **Advanced Chat System** powered by AI SDK React
+- **Advanced Chat System** powered by Vercel AI SDK
 - **File Attachments** with intelligent processing
 - **Real-time Streaming** responses
 - **Multi-format Support** (documents, images, archives)
+- **Context-aware Conversations** with memory
 
 ### ⚡ Workflow Automation
 
@@ -28,19 +38,23 @@
 - **State Management** with audit capabilities
 - **Notification Systems** with step-by-step processing
 
-### 🗄️ File Management
+### 🗄️ Enterprise Storage & Infrastructure
 
-- **MinIO S3-Compatible Storage** for file persistence
+- **MinIO S3-Compatible Storage** for scalable data persistence
+- **Apache Spark Connect** for distributed computing
 - **Intelligent File Type Detection** (archives, images, documents, videos)
 - **Secure Upload System** with comprehensive metadata
-- **Docker-based Infrastructure** for easy deployment
+- **Docker-based Infrastructure** for consistent deployment
+- **Health Monitoring** with intelligent service detection
 
 ### 🛠️ Developer Experience
 
 - **TypeScript** throughout the entire stack
-- **Comprehensive Makefile** for project management
+- **Comprehensive Makefile** with 50+ automation commands
 - **Hot Reload** development environment
 - **Docker Compose** for seamless local development
+- **uv Package Manager** for ultra-fast Python operations
+- **Intelligent Health Checks** for service reliability
 
 ---
 
@@ -48,18 +62,20 @@
 
 ```text
 motiflow/
-├── 🌐 web/motia-bridge/          # Next.js AI Chat Interface
+├── 🌐 web/motia-bridge/          # Next.js AI Chat Interface (Port 4000)
 │   ├── app/                      # App Router pages & API routes
-│   ├── components/               # Reusable UI components
-│   └── lib/                      # Utilities & integrations
+│   ├── components/               # Reusable UI components + AI elements
+│   └── lib/                      # Utilities & MinIO integration
 ├── ⚙️ workflows/motia-flows/     # Motia Workflow Engine
 │   ├── src/services/             # Business logic & API integrations
 │   ├── steps/                    # Workflow step definitions
-│   └── tutorial/                 # Learning resources
+│   └── python_modules/           # Python virtual environment (uv)
 ├── 🐳 infra/docker/              # Infrastructure as Code
 │   ├── docker-compose.yaml      # Service orchestration
-│   └── scripts/                  # Deployment utilities
-└── 📋 Makefile                   # Project management commands
+│   ├── images/spark/             # Apache Spark Connect container
+│   └── scripts/                  # Deployment & health check utilities
+├── 🧪 infra-testing/spark/       # Spark Connect testing environment
+└── 📋 Makefile                   # 50+ project management commands
 ```
 
 ---
@@ -70,6 +86,8 @@ motiflow/
 
 - **Node.js** 18+ and npm
 - **Docker** and Docker Compose
+- **Python** 3.11+ (for Spark workflows)
+- **uv** Python package manager (auto-installed if missing)
 - **Git** for version control
 
 ### 1️⃣ Clone & Setup
@@ -92,16 +110,19 @@ make dev
 
 This command will:
 
-- 🐳 Start MinIO infrastructure
-- 🌐 Launch NextJS web app on <http://localhost:3000>
+- 🐳 Start MinIO S3-compatible storage
+- ⚡ Launch Apache Spark Connect cluster  
+- 🌐 Launch NextJS web app on <http://localhost:4000>
 - ⚙️ Start Motia workflow engine
-- ⏳ Wait for all services to be ready
+- ⏳ Wait for all services to be ready with intelligent health checks
 
 ### 3️⃣ Access Applications
 
-- **Web Interface**: <http://localhost:3000>
-- **MinIO Console**: <http://localhost:9001> (admin/admin123)
+- **Web Interface**: <http://localhost:4000>
+- **MinIO Console**: <http://localhost:9001> (minio/minio123)
 - **MinIO API**: <http://localhost:9000>
+- **Spark Connect**: spark://localhost:15002 (gRPC)
+- **Spark UI**: <http://localhost:4040-4045> (when jobs are running)
 
 ---
 
@@ -113,27 +134,41 @@ Our comprehensive Makefile provides everything you need:
 
 ```bash
 make dev                 # 🚀 Start full development environment
-make dev-web            # 🌐 Web app only
-make dev-workflows      # ⚙️ Workflows only
-make status             # 📊 Check all services status
+make dev-web             # 🌐 Web app only
+make dev-workflows       # ⚙️ Workflows only
+make status              # 📊 Check all services status
 ```
 
 ### 📦 Dependencies & Building
 
 ```bash
-make install            # 📦 Install all dependencies
-make build              # 🏗️ Build all components
-make clean              # 🧹 Clean all artifacts
-make update             # 🔄 Update all dependencies
+make install             # 📦 Install all dependencies
+make build               # 🏗️ Build all components
+make clean               # 🧹 Clean all artifacts
+make update              # 🔄 Update all dependencies
 ```
 
 ### 🐳 Infrastructure
 
 ```bash
-make start-infra        # 🐳 Start Docker services
-make stop-infra         # 🛑 Stop Docker services
-make logs               # 📋 View all logs
-make backup             # 💾 Backup MinIO data
+make start-infra         # 🐳 Start all Docker services
+make stop-infra          # 🛑 Stop all Docker services  
+make restart-infra       # 🔄 Restart infrastructure
+make start-spark         # ⚡ Start only Spark Connect
+make start-minio         # 🗄️ Start only MinIO storage
+make logs                # 📋 View all service logs
+make logs-spark          # ⚡ View Spark Connect logs
+make wait-for-services   # ⏳ Wait for all services
+```
+
+### ⚡ Spark Analytics
+
+```bash
+make test-spark-infra    # 🧪 Test Spark Connect with Python
+make spark-connect-shell # � Open PySpark interactive shell
+make spark-wait-ready    # ⏳ Wait for Spark to be fully ready
+make spark-status        # 📊 Check Spark Connect status
+make pyspark             # 🐍 Alias for spark-connect-shell
 ```
 
 ### 🔍 Quality & Testing
@@ -141,17 +176,22 @@ make backup             # 💾 Backup MinIO data
 ```bash
 make lint               # 🔍 Lint all code
 make test               # 🧪 Run all tests
+make test-spark-connect # ⚡ Quick Spark connectivity test
 make format             # ✨ Format all code
 make check              # 🔎 Run all quality checks
+make clean-python       # 🐍 Clean Python caches & temp files
 ```
 
-### 🎯 Quick Commands
+### 🎯 Quick Commands & Utilities
 
 ```bash
-make help               # 📚 Show all available commands
-make doctor             # 🔍 System health check
+make help               # 📚 Show all available commands (50+)
+make doctor             # 🔍 Complete system health check
+make cleanup-temp       # 🧹 Clean temporary files
 make up                 # ⚡ Alias for start-infra
 make web                # ⚡ Alias for dev-web
+make open-minio         # 🌐 Open MinIO console in browser
+make open-web           # 🌐 Open web app in browser
 ```
 
 ---
@@ -163,10 +203,13 @@ make web                # ⚡ Alias for dev-web
 #### Web Application (`web/motia-bridge/.env.local`)
 
 ```env
+# Application Configuration
+PORT=4000
+
 # AI Configuration
 OPENAI_API_KEY=your_openai_api_key
 
-# MinIO Configuration  
+# MinIO S3 Configuration  
 MINIO_ENDPOINT=localhost:9000
 MINIO_ACCESS_KEY=minio
 MINIO_SECRET_KEY=minio123
@@ -182,6 +225,17 @@ MINIO_USERNAME=minio
 MINIO_PASSWORD=minio123
 AWS_ACCESS_KEY_ID=minio
 AWS_SECRET_ACCESS_KEY=minio123
+MINIO_ACCESS_KEY=minio
+MINIO_SECRET_KEY=minio123
+```
+
+#### Spark Environment Variables
+
+```env
+# Python Optimization (Auto-configured)
+PYTHONDONTWRITEBYTECODE=1
+PYTHONUNBUFFERED=1
+UV_NO_CACHE=0
 ```
 
 ### Customization
@@ -203,19 +257,34 @@ export default {
 ### Chat API Endpoints
 
 ```typescript
-// Chat with AI
+// AI Chat with file attachments
 POST /api/chat
 {
   "messages": [...],
   "attachments": [...]
 }
 
-// File Upload
+// Secure file upload to MinIO
 POST /api/upload
 {
   "file": File,
   "metadata": {...}
 }
+```
+
+### Spark Analytics API
+
+```python
+# PySpark with Spark Connect
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .remote("sc://localhost:15002") \
+    .getOrCreate()
+
+# Process data from MinIO
+df = spark.read.parquet("s3a://motiflow/data/")
+result = df.groupBy("category").count().collect()
 ```
 
 ### Workflow Triggers
@@ -238,10 +307,21 @@ POST /workflows/petstore/create-order
 
 Next.js application with AI chat interface featuring:
 
-- **AI SDK React Integration** for streaming chat
-- **File Upload System** with MinIO persistence
-- **Responsive UI** built with Tailwind CSS
-- **TypeScript** for type safety
+- **Vercel AI SDK Integration** for streaming chat responses
+- **File Upload System** with MinIO S3 persistence
+- **Responsive UI** built with Tailwind CSS and Shadcn/ui
+- **TypeScript** for complete type safety
+- **Port 4000** optimized configuration
+
+### ⚡ Spark Analytics Engine (`infra-testing/spark/`)
+
+Apache Spark Connect integration including:
+
+- **Spark 4.0.1** with gRPC Connect protocol
+- **Python Testing Suite** with uv package manager
+- **MinIO S3 Integration** for data lake operations
+- **PySpark Sessions** for interactive data analysis
+- **Health Monitoring** with intelligent startup detection
 
 ### ⚙️ Workflow Engine (`workflows/motia-flows/`)
 
@@ -251,15 +331,18 @@ Motia-powered automation engine including:
 - **Step Definitions** for workflow logic
 - **State Management** with audit capabilities
 - **API Integrations** for external services
+- **Python Virtual Environment** with uv optimization
 
 ### 🐳 Infrastructure (`infra/docker/`)
 
 Docker-based infrastructure featuring:
 
-- **MinIO S3 Storage** for file persistence
-- **Automatic Bucket Setup** with initialization scripts
+- **Apache Spark Connect** with automatic JAR dependency management
+- **MinIO S3 Storage** for data lake and file persistence  
+- **Intelligent Health Checks** with gRPC protocol support
 - **Network Configuration** for service communication
 - **Volume Management** for data persistence
+- **Optimized Startup** with proper service dependencies
 
 ---
 
@@ -279,18 +362,31 @@ make lint
 make test
 ```
 
-### 2. Testing Uploads
+### 2. Testing Spark Analytics
+
+```bash
+# Ensure Spark Connect is running
+make spark-status
+
+# Test Spark with Python
+make test-spark-infra
+
+# Interactive PySpark session
+make pyspark
+```
+
+### 3. Testing File Uploads
 
 ```bash
 # Ensure infrastructure is running
 make status
 
-# Test file upload via web interface
+# Test file upload via web interface at localhost:4000
 # Check MinIO console for uploaded files
 make open-minio
 ```
 
-### 3. Workflow Testing
+### 4. Workflow Testing
 
 ```bash
 # Start workflows in development
@@ -326,12 +422,32 @@ make logs
 #### Services Not Starting
 
 ```bash
-# Check system health
+# Complete system health check
 make doctor
+
+# Check specific service status
+make spark-status
+make test-spark-connect
 
 # Reset everything
 make clean
 make setup-dev
+```
+
+#### Spark Connect Issues
+
+```bash
+# Check if Spark is ready
+make spark-wait-ready
+
+# View Spark initialization logs
+make logs-spark
+
+# Test Spark connectivity
+make test-spark-infra
+
+# Interactive debugging
+make spark-connect-shell
 ```
 
 #### File Upload Errors
@@ -366,9 +482,12 @@ make install-workflows
 
 ```bash
 make status              # 📊 Overall service status
-make doctor             # 🔍 System health check  
+make doctor             # 🔍 Complete system health check  
 make logs               # 📋 All service logs
+make logs-spark         # ⚡ Spark Connect specific logs
+make spark-status       # 🔍 Detailed Spark Connect status
 make open-minio         # 🌐 MinIO web console
+make cleanup-temp       # 🧹 Clean temporary files
 ```
 
 ---
@@ -429,11 +548,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Built with ❤️ using:
 
 - **[Next.js](https://nextjs.org/)** - React framework for production
+- **[Apache Spark](https://spark.apache.org/)** - Unified analytics engine
 - **[Motia](https://motia.dev/)** - Workflow automation engine
-- **[AI SDK](https://sdk.vercel.ai/)** - AI application development
+- **[Vercel AI SDK](https://sdk.vercel.ai/)** - AI application development
 - **[MinIO](https://min.io/)** - S3-compatible object storage
 - **[TypeScript](https://typescriptlang.org/)** - Type-safe JavaScript
 - **[Docker](https://docker.com/)** - Containerization platform
+- **[uv](https://github.com/astral-sh/uv)** - Ultra-fast Python package manager
 
 ---
 
