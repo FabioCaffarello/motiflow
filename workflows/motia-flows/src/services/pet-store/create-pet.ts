@@ -1,14 +1,14 @@
-import { Pet } from './types'
+import { Pet } from "./types";
 
-export const createPet = async (pet: Omit<Pet, 'id'>): Promise<Pet> => {
-  const response = await fetch('https://petstore.swagger.io/v2/pet', {
-    method: 'POST',
+export const createPet = async (pet: Omit<Pet, "id">): Promise<Pet> => {
+  const response = await fetch("https://petstore.swagger.io/v2/pet", {
+    method: "POST",
     body: JSON.stringify({
-      name: pet?.name ?? '',
-      photoUrls: [pet?.photoUrl ?? ''],
-      status: 'available',
+      name: pet?.name ?? "",
+      photoUrls: [pet?.photoUrl ?? ""],
+      status: "available",
     }),
-    headers: { 'Content-Type': 'application/json' },
-  })
-  return response.json()
-}
+    headers: { "Content-Type": "application/json" },
+  });
+  return response.json();
+};
