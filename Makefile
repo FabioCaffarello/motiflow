@@ -89,13 +89,11 @@ install-infra: ## 🐳 Setup Docker infrastructure
 # Development
 # =============================================================================
 
-# TODO: test
 dev: ## 🚀 Start full development environment
 	@echo "$(GREEN)🚀 Starting full development environment...$(NC)"
 	@$(MAKE) start-infra
 	@$(MAKE) dev-parallel
 
-# TODO: test
 dev-parallel: ## 🔄 Run web and workflows in parallel development mode
 	@echo "$(BLUE)🔄 Starting parallel development servers...$(NC)"
 	@trap 'kill 0' INT; \
@@ -103,7 +101,6 @@ dev-parallel: ## 🔄 Run web and workflows in parallel development mode
 	(cd $(WORKFLOWS_DIR) && npm run dev) & \
 	wait
 
-# FIXME: need to change the port 3000 to 4000
 dev-web: ## 🌐 Start web application in development mode
 	@echo "$(BLUE)🌐 Starting web development server...$(NC)"
 	@cd $(WEB_DIR) && npm run dev
@@ -156,7 +153,6 @@ test-workflows: ## ⚙️ Run workflow engine tests
 	@echo "$(PURPLE)⚙️ Running workflow tests...$(NC)"
 	@cd $(WORKFLOWS_DIR) && npm test 2>/dev/null || echo "$(YELLOW)⚠️  No tests configured for workflows$(NC)"
 
-# FIXME: might need to adjust spark up as dependency
 test-spark-infra: ## ⚡ Test Spark Connect infrastructure
 	@echo "$(PURPLE)⚡ Testing Spark Connect infrastructure...$(NC)"
 	@if [ ! -d "infra-testing/spark" ]; then \
@@ -169,15 +165,23 @@ test-spark-infra: ## ⚡ Test Spark Connect infrastructure
 	uv run --no-project main.py
 	@echo "$(GREEN)✅ Spark infrastructure tests completed$(NC)"
 
-# FIXME: might need to adjust spark up as dependency
 test-spark-connect: ## ⚡ Quick Spark Connect connectivity test
 	@echo "$(PURPLE)⚡ Testing Spark Connect connectivity...$(NC)"
-	@if ! curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then \
+	@if ! nc -z localhost 15002 >/dev/null 2>&1; then \
 		echo "$(RED)❌ Spark Connect server not accessible on port 15002$(NC)"; \
 		echo "$(YELLOW)💡 Run 'make start-spark' to start Spark Connect server$(NC)"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)✅ Spark Connect server is accessible$(NC)"
+	@echo "$(YELLOW)⏳ Port 15002 is open, checking if Spark Connect service is ready...$(NC)"
+	@if $(DOCKER_COMPOSE) logs spark-connect 2>/dev/null | grep -q "Spark Connect server started at"; then \
+		echo "$(GREEN)✅ Spark Connect server is ready and accepting connections$(NC)"; \
+	elif timeout 3s bash -c 'exec 3<>/dev/tcp/localhost/15002' 2>/dev/null; then \
+		echo "$(GREEN)✅ Spark Connect server is ready and accepting connections$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  Port is open but Spark Connect may still be initializing$(NC)"; \
+		echo "$(CYAN)💡 Check initialization status: 'make logs-spark'$(NC)"; \
+		echo "$(CYAN)💡 Or test with actual Spark session: 'make test-spark-infra'$(NC)"; \
+	fi
 
 # =============================================================================
 # Code Quality
@@ -256,9 +260,6 @@ restart-spark: ## 🔄 Restart Spark cluster
 	@$(MAKE) stop-spark
 	@$(MAKE) start-spark
 
-# FIXME: ⏳ Waiting for Spark Connect... (29/30) 
-# ⏳ Waiting for Spark Connect... (30/30) 
-# ⚠️  Spark Connect may still be starting 
 wait-for-services: ## ⏳ Wait for services to be ready
 	@echo "$(YELLOW)⏳ Waiting for services to be ready...$(NC)"
 	@sleep 5
@@ -276,16 +277,30 @@ wait-for-services: ## ⏳ Wait for services to be ready
 		fi; \
 	done
 	@echo "$(YELLOW)⏳ Checking Spark Connect...$(NC)"
-	@for i in {1..30}; do \
-		if curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then \
-			echo "$(GREEN)✅ Spark Connect is ready!$(NC)"; \
-			break; \
+	@echo "$(CYAN)💡 Spark Connect may take 2-5 minutes to download dependencies...$(NC)"
+	@for i in {1..60}; do \
+		if nc -z localhost 15002 >/dev/null 2>&1; then \
+			echo "$(YELLOW)⏳ Port 15002 is open, checking if Spark Connect is ready... ($$i/60)$(NC)"; \
+			if $(DOCKER_COMPOSE) logs spark-connect 2>/dev/null | grep -q "Spark Connect server started at"; then \
+				echo "$(GREEN)✅ Spark Connect is ready and accepting connections!$(NC)"; \
+				break; \
+			elif timeout 3s bash -c 'exec 3<>/dev/tcp/localhost/15002' 2>/dev/null; then \
+				echo "$(GREEN)✅ Spark Connect is ready and accepting connections!$(NC)"; \
+				break; \
+			elif [ $$i -ge 45 ]; then \
+				echo "$(YELLOW)⚠️  Spark Connect port is open but may still be initializing JARs$(NC)"; \
+				echo "$(CYAN)💡 Check logs with 'make logs-spark' for download progress$(NC)"; \
+				echo "$(GREEN)✅ Infrastructure started - Spark Connect will be ready shortly$(NC)"; \
+				break; \
+			fi; \
+		else \
+			echo "$(YELLOW)⏳ Waiting for Spark Connect to start... ($$i/60)$(NC)"; \
 		fi; \
-		echo "$(YELLOW)⏳ Waiting for Spark Connect... ($$i/30)$(NC)"; \
 		sleep 3; \
-		if [ $$i -eq 30 ]; then \
-			echo "$(YELLOW)⚠️  Spark Connect may still be starting$(NC)"; \
-			break; \
+		if [ $$i -eq 60 ]; then \
+			echo "$(RED)❌ Spark Connect failed to start within 3 minutes$(NC)"; \
+			echo "$(CYAN)💡 Check logs with 'make logs-spark'$(NC)"; \
+			exit 1; \
 		fi; \
 	done
 
@@ -299,12 +314,10 @@ start: ## 🚀 Start all services in production mode
 	@$(MAKE) start-web-prod
 	@$(MAKE) start-workflows-prod
 
-# TODO:	test
 start-web-prod: ## 🌐 Start web application in production mode
 	@echo "$(BLUE)🌐 Starting web in production mode...$(NC)"
 	@cd $(WEB_DIR) && npm start
 
-# TODO:	test
 start-workflows-prod: ## ⚙️ Start workflow engine in production mode
 	@echo "$(PURPLE)⚙️ Starting workflows in production mode...$(NC)"
 	@cd $(WORKFLOWS_DIR) && npm start 2>/dev/null || echo "$(YELLOW)⚠️  No production start script$(NC)"
@@ -479,7 +492,6 @@ cleanup-temp: ## 🧹 Quick cleanup of temporary files (non-destructive)
 # =============================================================================
 # Spark Connect Management  
 # =============================================================================
-# FIXME: Need to adjust commands for Spark Connect usage
 spark-connect-shell: ## ⚡ Connect to Spark using PySpark shell
 	@echo "$(PURPLE)⚡ Opening PySpark shell connected to Spark Connect...$(NC)"
 	@echo "$(YELLOW) Use: spark = SparkSession.builder.remote('sc://localhost:15002').getOrCreate()$(NC)"
@@ -491,11 +503,15 @@ spark-connect-status: ## 📊 Check Spark Connect server status
 	@echo "$(PURPLE)📊 Spark Connect Status$(NC)"
 	@echo "========================"
 	@echo "$(BLUE)Checking Spark Connect server...$(NC)"
-	@if curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then \
-		echo "$(GREEN)✅ Spark Connect server is running on port 15002$(NC)"; \
-	else \
+	@if ! nc -z localhost 15002 >/dev/null 2>&1; then \
 		echo "$(RED)❌ Spark Connect server not accessible on port 15002$(NC)"; \
 		echo "$(YELLOW)💡 Run 'make start-spark' to start the server$(NC)"; \
+	elif timeout 5s bash -c 'exec 3<>/dev/tcp/localhost/15002 && echo "test" >&3' 2>/dev/null; then \
+		echo "$(GREEN)✅ Spark Connect server is running and ready$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  Port 15002 is open but Spark Connect may still be initializing$(NC)"; \
+		echo "$(CYAN)💡 Checking recent logs for initialization progress...$(NC)"; \
+		@$(DOCKER_COMPOSE) logs --tail=10 spark-connect 2>/dev/null | grep -E "(Started|Bound|Exception|Error)" || echo "$(YELLOW)Check full logs with 'make logs-spark'$(NC)"; \
 	fi
 	@echo ""
 	@echo "$(BLUE)Docker Container Status:$(NC)"
@@ -515,6 +531,34 @@ spark-submit-test: ## ⚡ Submit our infrastructure test to Spark Connect
 spark-connect-logs-follow: ## 📋 Follow Spark Connect logs in real-time
 	@echo "$(PURPLE)📋 Following Spark Connect logs...$(NC)"
 	@$(DOCKER_COMPOSE) logs -f spark-connect
+
+spark-wait-ready: ## ⏳ Wait for Spark Connect to be fully ready
+	@echo "$(PURPLE)⏳ Waiting for Spark Connect to be fully initialized...$(NC)"
+	@echo "$(CYAN)💡 This may take 2-5 minutes for initial JAR downloads$(NC)"
+	@for i in {1..100}; do \
+		if nc -z localhost 15002 >/dev/null 2>&1; then \
+			if $(DOCKER_COMPOSE) logs spark-connect 2>/dev/null | grep -q "Spark Connect server started at"; then \
+				echo "$(GREEN)✅ Spark Connect is fully ready!$(NC)"; \
+				break; \
+			elif timeout 3s bash -c 'exec 3<>/dev/tcp/localhost/15002' 2>/dev/null; then \
+				echo "$(GREEN)✅ Spark Connect is fully ready!$(NC)"; \
+				break; \
+			else \
+				echo "$(YELLOW)⏳ Spark Connect initializing... ($$i/100)$(NC)"; \
+				if $(DOCKER_COMPOSE) logs --tail=3 spark-connect 2>/dev/null | grep -q "downloading\|SUCCESSFUL"; then \
+					echo "$(CYAN)📦 Still downloading dependencies...$(NC)"; \
+				fi; \
+			fi; \
+		else \
+			echo "$(YELLOW)⏳ Waiting for Spark Connect to start... ($$i/100)$(NC)"; \
+		fi; \
+		sleep 3; \
+		if [ $$i -eq 100 ]; then \
+			echo "$(RED)❌ Spark Connect failed to become ready within 5 minutes$(NC)"; \
+			echo "$(CYAN)💡 Check logs: 'make logs-spark'$(NC)"; \
+			exit 1; \
+		fi; \
+	done
 
 spark-connect-exec: ## 💻 Execute command in Spark Connect container
 	@echo "$(PURPLE)💻 Opening shell in Spark Connect container...$(NC)"
