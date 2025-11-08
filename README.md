@@ -213,6 +213,24 @@ make open-minio         # 🌐 Open MinIO console in browser
 make open-web           # 🌐 Open web app in browser
 ```
 
+### 🔐 Private Documentation (GPG Encrypted)
+
+```bash
+# Roadmap Management (Personal Planning)
+make roadmap            # 📋 Check roadmap status
+make unlock             # 🔓 Decrypt roadmap for editing
+make lock               # 🔒 Encrypt roadmap after changes
+make roadmap-help       # 📚 Show complete workflow guide
+
+# Quick workflow
+make unlock-roadmap     # 🔓 Decrypt docs/roadmap.md
+# Edit docs/roadmap.md
+make lock-roadmap       # 🔒 Encrypt to docs/roadmap.md.gpg
+make clean-roadmap      # 🧹 Remove decrypted version (optional)
+```
+
+> 🔐 **Private Planning**: The roadmap uses AES256 encryption to keep personal development plans private while maintaining a public repository. Only encrypted `.gpg` files are tracked in git.
+
 ---
 
 ## 🔧 Configuration

@@ -602,6 +602,117 @@ generate-types: ## 🔧 Generate TypeScript types for workflows
 	@cd $(WORKFLOWS_DIR) && npm run generate-types
 	@echo "$(GREEN)✅ Types generated$(NC)"
 
+# =============================================================================
+# Documentation Security (GPG)
+# =============================================================================
+
+lock-roadmap: ## 🔒 Encrypt roadmap.md with GPG (requires passphrase)
+	@echo "$(YELLOW)🔒 Encrypting roadmap.md with GPG...$(NC)"
+	@if [ ! -f "docs/roadmap.md" ]; then \
+		echo "$(RED)❌ docs/roadmap.md not found$(NC)"; \
+		echo "$(CYAN)💡 Use 'make unlock-roadmap' to decrypt first, or create the file$(NC)"; \
+		exit 1; \
+	fi
+	@if command -v gpg >/dev/null 2>&1; then \
+		echo "$(BLUE)🔐 You will be prompted for a passphrase...$(NC)"; \
+		cd docs && gpg --symmetric --cipher-algo AES256 --output roadmap.md.gpg roadmap.md && \
+		echo "$(GREEN)✅ Roadmap encrypted successfully to docs/roadmap.md.gpg$(NC)" && \
+		echo "$(YELLOW)💡 Original file preserved for local use$(NC)" && \
+		echo "$(CYAN)💡 The encrypted file (.gpg) can be safely committed to git$(NC)" && \
+		echo "$(CYAN)💡 Use 'make unlock-roadmap' to decrypt when needed$(NC)"; \
+	else \
+		echo "$(RED)❌ GPG not installed$(NC)"; \
+		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
+		exit 1; \
+	fi
+
+unlock-roadmap: ## 🔓 Decrypt roadmap.md.gpg with GPG (requires passphrase)
+	@echo "$(YELLOW)🔓 Decrypting roadmap.md.gpg with GPG...$(NC)"
+	@if [ ! -f "docs/roadmap.md.gpg" ]; then \
+		echo "$(RED)❌ docs/roadmap.md.gpg not found$(NC)"; \
+		echo "$(CYAN)💡 Use 'make lock-roadmap' to create encrypted version$(NC)"; \
+		exit 1; \
+	fi
+	@if command -v gpg >/dev/null 2>&1; then \
+		echo "$(BLUE)🔐 You will be prompted for the passphrase...$(NC)"; \
+		cd docs && gpg --decrypt --output roadmap.md roadmap.md.gpg && \
+		echo "$(GREEN)✅ Roadmap decrypted successfully to docs/roadmap.md$(NC)" && \
+		echo "$(YELLOW)⚠️  Remember: docs/roadmap.md is in .gitignore and won't be committed$(NC)" && \
+		echo "$(CYAN)💡 Make your changes, then use 'make lock-roadmap' to update encrypted version$(NC)"; \
+	else \
+		echo "$(RED)❌ GPG not installed$(NC)"; \
+		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
+		exit 1; \
+	fi
+
+check-roadmap: ## 🔍 Check roadmap status (encrypted vs decrypted)
+	@echo "$(CYAN)🔍 Roadmap Status$(NC)"
+	@echo "=================="
+	@echo "$(BLUE)📁 Location: docs/$(NC)"
+	@echo ""
+	@if [ -f "docs/roadmap.md" ]; then \
+		echo "$(GREEN)✅ Decrypted version: docs/roadmap.md$(NC)"; \
+		echo "   📊 Size: $$(du -h docs/roadmap.md | cut -f1)"; \
+		echo "   📅 Modified: $$(stat -f "%Sm" docs/roadmap.md)"; \
+		echo "   🔍 Git status: Not tracked (in .gitignore)"; \
+	else \
+		echo "$(YELLOW)⚠️  No decrypted version found$(NC)"; \
+		echo "   💡 Use 'make unlock-roadmap' to decrypt"; \
+	fi
+	@echo ""
+	@if [ -f "docs/roadmap.md.gpg" ]; then \
+		echo "$(GREEN)✅ Encrypted version: docs/roadmap.md.gpg$(NC)"; \
+		echo "   📊 Size: $$(du -h docs/roadmap.md.gpg | cut -f1)"; \
+		echo "   📅 Modified: $$(stat -f "%Sm" docs/roadmap.md.gpg)"; \
+		echo "   🔍 Git status: Can be safely committed"; \
+	else \
+		echo "$(RED)❌ No encrypted version found$(NC)"; \
+		echo "   💡 Use 'make lock-roadmap' to create encrypted version"; \
+	fi
+	@echo ""
+	@echo "$(BLUE)🔧 Available Commands:$(NC)"
+	@echo "   🔓 Decrypt:  make unlock-roadmap"
+	@echo "   🔒 Encrypt:  make lock-roadmap"
+	@echo "   🔍 Status:   make check-roadmap"
+	@echo ""
+	@echo "$(BLUE)🔐 Security Notes:$(NC)"
+	@echo "   • Encryption: AES256 symmetric encryption"
+	@echo "   • Passphrase: Interactive prompt (secure)"
+	@echo "   • Git: Only .gpg files are tracked"
+
+clean-roadmap: ## 🧹 Remove decrypted roadmap (keep encrypted version)
+	@echo "$(YELLOW)🧹 Removing decrypted roadmap...$(NC)"
+	@if [ -f "docs/roadmap.md" ]; then \
+		rm docs/roadmap.md && \
+		echo "$(GREEN)✅ Decrypted version removed$(NC)" && \
+		echo "$(CYAN)💡 Encrypted version preserved: docs/roadmap.md.gpg$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  No decrypted version found$(NC)"; \
+	fi
+
+roadmap-workflow: ## 📋 Show roadmap workflow guide
+	@echo "$(CYAN)📋 Roadmap Workflow Guide$(NC)"
+	@echo "=========================="
+	@echo ""
+	@echo "$(BLUE)🚀 Getting Started:$(NC)"
+	@echo "1. make unlock-roadmap    # Decrypt for editing"
+	@echo "2. # Edit docs/roadmap.md"
+	@echo "3. make lock-roadmap      # Encrypt changes"
+	@echo "4. git add docs/roadmap.md.gpg"
+	@echo "5. git commit -m 'Update roadmap'"
+	@echo ""
+	@echo "$(BLUE)🔄 Daily Workflow:$(NC)"
+	@echo "• Morning:   make unlock-roadmap"
+	@echo "• Work:      Edit docs/roadmap.md"
+	@echo "• Evening:   make lock-roadmap"
+	@echo "• Cleanup:   make clean-roadmap (optional)"
+	@echo ""
+	@echo "$(BLUE)🔐 Security Benefits:$(NC)"
+	@echo "• Private planning in public repo"
+	@echo "• AES256 encryption"
+	@echo "• Personal passphrase protection"
+	@echo "• No sensitive info in git history"
+
 open-minio: ## 🌐 Open MinIO console in browser
 	@echo "$(CYAN)🌐 Opening MinIO console...$(NC)"
 	@open http://localhost:9001 2>/dev/null || echo "Visit http://localhost:9001"
@@ -644,3 +755,9 @@ spark-logs: logs-spark ## 📋 Alias for logs-spark
 spark-shell: spark-connect-shell ## ⚡ Alias for spark-connect-shell
 cleanup: cleanup-temp ## 🧹 Alias for cleanup-temp
 clean-py: clean-python ## 🐍 Alias for clean-python
+
+# Documentation aliases
+roadmap: check-roadmap ## 📋 Alias for check-roadmap
+unlock: unlock-roadmap ## 🔓 Alias for unlock-roadmap  
+lock: lock-roadmap ## 🔒 Alias for lock-roadmap
+roadmap-help: roadmap-workflow ## 📚 Alias for roadmap-workflow
