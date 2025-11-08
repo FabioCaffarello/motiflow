@@ -1,3 +1,13 @@
+x-spark-common: &spark-common
+  build:
+    context: ./images
+    dockerfile: Dockerfile.spark
+  volumes:
+    - ./.artefacts/spark/local-cluster/mnt/spark-checkpoints:/tmp/spark-checkpoints
+    - ./.artefacts/spark/local-cluster/mnt/spark-state:/tmp/spark-state
+  networks:
+    - motiflow-network
+
 services:
   minio:
     restart: always
@@ -25,11 +35,45 @@ services:
       - .env
     entrypoint: >
       /bin/sh -c " /tmp/wait-for-it.sh minio:9000 && /usr/bin/mc alias set minio http://minio:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY} && /usr/bin/mc mb minio/motiflow; exit 0; "
-
     volumes:
       - ./scripts/wait-for-it.sh:/tmp/wait-for-it.sh
     networks:
       - motiflow-network
+
+  spark-master:
+    <<: *spark-common
+    container_name: spark-master
+    command: bin/spark-class org.apache.spark.deploy.master.Master
+    ports:
+      - "9095:8080"
+      - "7077:7077"
+
+  spark-worker-1: &spark-worker
+    <<: *spark-common
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    container_name: spark-worker-1
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_MASTER_URL: spark://spark-master:7077
+  
+  spark-worker-2:
+    <<: *spark-worker
+    container_name: spark-worker-2
+
+  spark-connect:
+    <<: *spark-common
+    container_name: spark-connect
+    environment:
+      SPARK_MODE: driver
+      SPARK_MASTER: spark://spark-master:7077
+    depends_on:
+      - spark-master
+    command: ["/bin/bash", "-c", "/opt/bitnami/spark/sbin/start-connect-server.sh --master spark://spark-master:7077 --packages org.apache.spark:spark-connect_2.12:3.5.5"]
+
 volumes:
   minio-data:
 
