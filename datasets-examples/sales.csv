@@ -1,0 +1,21 @@
+order_id,customer_id,customer_name,product_category,product_name,quantity,unit_price,total_amount,order_date,ship_date,status,payment_method,region,sales_rep_id
+ORD001,CUST1001,Tech Solutions Inc,Electronics,Laptop Pro 15,2,1299.99,2599.98,2024-01-15,2024-01-17,delivered,credit_card,North,1004
+ORD002,CUST1002,Global Dynamics,Software,Project Management Suite,5,199.99,999.95,2024-01-16,2024-01-18,delivered,bank_transfer,East,1010
+ORD003,CUST1003,Innovate Corp,Electronics,Wireless Headphones,10,89.99,899.90,2024-01-18,2024-01-20,shipped,paypal,West,1015
+ORD004,CUST1004,Smart Systems,Hardware,External Monitor 27,3,349.99,1049.97,2024-01-20,2024-01-22,processing,credit_card,South,1004
+ORD005,CUST1005,Future Tech,Software,Analytics Platform,1,2999.99,2999.99,2024-01-22,2024-01-25,delivered,bank_transfer,North,1010
+ORD006,CUST1006,Data Insights,Electronics,Tablet Pro,4,599.99,2399.96,2024-01-25,2024-01-27,delivered,credit_card,West,1015
+ORD007,CUST1007,Cloud Nine,Software,Cloud Storage 1TB,20,29.99,599.80,2024-01-28,2024-01-30,shipped,paypal,East,1010
+ORD008,CUST1008,Quantum Labs,Hardware,Mechanical Keyboard,6,129.99,779.94,2024-02-01,2024-02-03,delivered,credit_card,North,1004
+ORD009,CUST1009,Nexus Solutions,Electronics,Smartphone Pro,8,799.99,6399.92,2024-02-03,2024-02-05,processing,bank_transfer,South,1015
+ORD010,CUST1010,Alpha Systems,Software,Security Suite Enterprise,3,1499.99,4499.97,2024-02-05,2024-02-08,delivered,credit_card,West,1010
+ORD011,CUST1011,Beta Innovations,Hardware,Wireless Mouse,15,39.99,599.85,2024-02-08,2024-02-10,shipped,paypal,East,1004
+ORD012,CUST1012,Gamma Technologies,Electronics,Smart Watch Series 5,7,299.99,2099.93,2024-02-10,2024-02-12,delivered,credit_card,North,1015
+ORD013,CUST1013,Delta Enterprises,Software,Database Management Pro,2,799.99,1599.98,2024-02-12,2024-02-15,processing,bank_transfer,South,1010
+ORD014,CUST1014,Epsilon Corp,Hardware,USB-C Hub,12,49.99,599.88,2024-02-15,2024-02-17,delivered,paypal,West,1004
+ORD015,CUST1015,Zeta Systems,Electronics,Gaming Console X,1,499.99,499.99,2024-02-18,2024-02-20,shipped,credit_card,East,1015
+ORD016,CUST1016,Eta Solutions,Software,Video Editing Pro,4,299.99,1199.96,2024-02-20,2024-02-22,delivered,bank_transfer,North,1010
+ORD017,CUST1017,Theta Technologies,Hardware,Webcam 4K,9,89.99,809.91,2024-02-22,2024-02-25,processing,credit_card,South,1004
+ORD018,CUST1018,Iota Dynamics,Electronics,Bluetooth Speaker,11,79.99,879.89,2024-02-25,2024-02-27,delivered,paypal,West,1015
+ORD019,CUST1019,Kappa Innovations,Software,CRM Platform,1,1999.99,1999.99,2024-02-28,2024-03-02,shipped,bank_transfer,East,1010
+ORD020,CUST1020,Lambda Corp,Hardware,Portable SSD 2TB,5,179.99,899.95,2024-03-01,2024-03-03,delivered,credit_card,North,1004

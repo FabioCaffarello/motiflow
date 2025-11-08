@@ -1,0 +1,16 @@
+project_id,project_name,department,start_date,end_date,status,budget,actual_cost,team_lead_id,team_members,priority,completion_percentage
+PROJ001,Mobile App Redesign,Engineering,2024-01-15,2024-04-15,active,150000,87500,1002,"1001,1005,1011,1019",high,75
+PROJ002,Customer Portal Upgrade,Engineering,2024-02-01,2024-05-01,active,200000,120000,1008,"1014,1016,1019",medium,60
+PROJ003,Q1 Marketing Campaign,Marketing,2024-01-01,2024-03-31,completed,75000,68000,1003,"1009,1017",high,100
+PROJ004,Sales Process Optimization,Sales,2024-01-10,2024-06-10,active,50000,28000,1015,"1004,1010",medium,45
+PROJ005,HR System Migration,HR,2024-02-15,2024-07-15,planning,80000,5000,1006,"1006",low,15
+PROJ006,Financial Reporting Dashboard,Finance,2024-01-20,2024-04-20,active,60000,35000,1007,"1007,1018",high,65
+PROJ007,Security Audit Implementation,Engineering,2024-03-01,2024-08-01,planning,120000,8000,1016,"1016",critical,10
+PROJ008,Product Roadmap 2024,Product,2024-01-01,2024-12-31,active,25000,15000,1012,"1012,1013,1020",medium,30
+PROJ009,Employee Training Platform,HR,2024-02-01,2024-05-01,active,45000,22000,1006,"1006",medium,55
+PROJ010,Cloud Infrastructure Upgrade,Engineering,2024-01-05,2024-03-05,completed,180000,165000,1008,"1002,1008,1014,1016",critical,100
+PROJ011,Content Marketing Automation,Marketing,2024-02-10,2024-05-10,active,40000,18000,1009,"1009,1017",low,40
+PROJ012,Customer Support Chatbot,Engineering,2024-01-25,2024-04-25,active,90000,54000,1001,"1001,1005,1019",medium,70
+PROJ013,Sales Analytics Platform,Sales,2024-03-01,2024-09-01,planning,110000,12000,1010,"1010,1004",high,20
+PROJ014,UX Research Initiative,Design,2024-01-15,2024-06-15,active,30000,18500,1013,"1013",medium,50
+PROJ015,Compliance Documentation,Finance,2024-02-01,2024-04-01,active,35000,28000,1018,"1018,1007",high,80
