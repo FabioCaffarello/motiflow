@@ -25,7 +25,6 @@ services:
       - .env
     entrypoint: >
       /bin/sh -c " /tmp/wait-for-it.sh minio:9000 && /usr/bin/mc alias set minio http://minio:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY} && /usr/bin/mc mb minio/motiflow; exit 0; "
-
     volumes:
       - ./scripts/wait-for-it.sh:/tmp/wait-for-it.sh
     networks:
@@ -58,7 +57,6 @@ services:
       - minio
     networks:
       - motiflow-network
-
 
 volumes:
   minio-data:
