@@ -53,6 +53,7 @@ services:
     volumes:
       - spark-warehouse:/opt/spark/warehouse
       - spark-checkpoints:/tmp/spark-checkpoints
+      - ../../datasets-examples:/opt/spark/examples:ro
     depends_on:
       - minio
     networks:

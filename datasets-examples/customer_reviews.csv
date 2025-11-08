@@ -1,0 +1,16 @@
+review_id,customer_name,product_name,rating,review_text,review_date,verified_purchase,helpful_votes
+REV001,John Doe,Laptop Pro 15,5,"Excellent laptop with great performance. The battery life is outstanding and the display is crystal clear.",2024-01-20,true,23
+REV002,Jane Smith,Wireless Headphones,4,"Good sound quality but could use better noise cancellation. Comfortable for long use.",2024-01-22,true,15
+REV003,Mike Johnson,Project Management Suite,5,"This software has transformed our team productivity. Highly recommend for any organization.",2024-01-25,true,31
+REV004,Sarah Wilson,External Monitor 27,4,"Great display quality and good value for money. Setup was straightforward.",2024-01-28,true,12
+REV005,David Brown,Analytics Platform,5,"Powerful tool for data analysis. The reporting features are exactly what we needed.",2024-02-01,true,28
+REV006,Emma Davis,Tablet Pro,3,"Decent tablet but battery drains faster than expected. Good for basic tasks.",2024-02-05,false,8
+REV007,Alex Miller,Cloud Storage 1TB,5,"Reliable and fast. Great for backing up all our company data. No issues so far.",2024-02-08,true,19
+REV008,Lisa Garcia,Mechanical Keyboard,4,"Satisfying typing experience. Keys feel great but can be a bit noisy for office use.",2024-02-12,true,22
+REV009,Tom Anderson,Smartphone Pro,5,"Amazing camera quality and performance. Battery easily lasts the whole day.",2024-02-15,true,35
+REV010,Rachel White,Security Suite Enterprise,5,"Comprehensive security solution. Easy to manage and configure. Great customer support.",2024-02-18,true,18
+REV011,Chris Taylor,Wireless Mouse,4,"Smooth operation and good battery life. Could use better ergonomics.",2024-02-20,true,14
+REV012,Nina Rodriguez,Smart Watch Series 5,5,"Love the fitness tracking features. Notifications work perfectly with my phone.",2024-02-22,true,27
+REV013,Paul Martinez,Database Management Pro,4,"Robust database solution. Learning curve is steep but worth it once you get the hang of it.",2024-02-25,true,16
+REV014,Kelly Thompson,USB-C Hub,3,"Does the job but gets warm during heavy use. Good selection of ports though.",2024-02-28,true,9
+REV015,Ryan Lee,Gaming Console X,5,"Incredible gaming experience. Graphics are stunning and load times are super fast.",2024-03-02,true,42

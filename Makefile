@@ -165,6 +165,22 @@ test-spark-infra: ## ⚡ Test Spark Connect infrastructure
 	uv run --no-project main.py
 	@echo "$(GREEN)✅ Spark infrastructure tests completed$(NC)"
 
+test-csv-datasets: ## 📊 Test CSV datasets with Spark Connect
+	@echo "$(PURPLE)📊 Testing CSV datasets with Spark Connect...$(NC)"
+	@if [ ! -d "infra-testing/spark" ]; then \
+		echo "$(RED)❌ Spark infrastructure test directory not found$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -d "datasets-examples" ]; then \
+		echo "$(RED)❌ Examples directory not found$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(YELLOW)📁 Testing CSV loading and analysis...$(NC)"
+	@cd infra-testing/spark && \
+	trap 'rm -rf .uv_tmp __pycache__ *.pyc 2>/dev/null || true' EXIT && \
+	uv run --no-project test_csv_datasets.py
+	@echo "$(GREEN)✅ CSV dataset tests completed$(NC)"
+
 test-spark-connect: ## ⚡ Quick Spark Connect connectivity test
 	@echo "$(PURPLE)⚡ Testing Spark Connect connectivity...$(NC)"
 	@if ! nc -z localhost 15002 >/dev/null 2>&1; then \
@@ -623,6 +639,7 @@ workflows: dev-workflows ## ⚙️ Alias for dev-workflows
 pyspark: spark-connect-shell ## 🐍 Alias for spark-connect-shell
 spark-ui: open-spark ## 🌐 Alias for open-spark
 test-spark: test-spark-infra ## 🧪 Alias for test-spark-infra
+test-csv: test-csv-datasets ## 📊 Alias for test-csv-datasets
 spark-logs: logs-spark ## 📋 Alias for logs-spark
 spark-shell: spark-connect-shell ## ⚡ Alias for spark-connect-shell
 cleanup: cleanup-temp ## 🧹 Alias for cleanup-temp

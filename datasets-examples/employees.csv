@@ -1,0 +1,21 @@
+employee_id,name,department,position,salary,hire_date,age,city,country,performance_score,projects_completed,team_size
+1001,Alice Johnson,Engineering,Senior Developer,95000,2019-03-15,29,San Francisco,USA,8.5,12,5
+1002,Bob Smith,Engineering,Tech Lead,120000,2017-08-22,34,New York,USA,9.2,18,8
+1003,Carol Williams,Marketing,Marketing Manager,75000,2020-01-10,31,Los Angeles,USA,7.8,9,4
+1004,David Brown,Sales,Sales Representative,60000,2021-06-01,26,Chicago,USA,8.1,15,3
+1005,Eva Davis,Engineering,Junior Developer,65000,2022-02-14,24,Austin,USA,7.5,6,5
+1006,Frank Miller,HR,HR Manager,80000,2018-11-30,38,Boston,USA,8.7,11,6
+1007,Grace Wilson,Finance,Financial Analyst,70000,2019-09-05,28,Seattle,USA,8.3,14,4
+1008,Henry Taylor,Engineering,DevOps Engineer,85000,2020-07-18,32,Denver,USA,9.0,16,7
+1009,Ivy Anderson,Marketing,Content Strategist,55000,2021-12-03,25,Portland,USA,7.9,8,3
+1010,Jack Thomas,Sales,Account Manager,68000,2019-04-27,30,Miami,USA,8.4,13,5
+1011,Kate Martinez,Engineering,Frontend Developer,72000,2020-10-12,27,Phoenix,USA,8.0,10,4
+1012,Leo Garcia,Product,Product Manager,90000,2018-05-20,33,San Diego,USA,8.8,17,6
+1013,Mia Rodriguez,Design,UX Designer,68000,2021-03-08,26,Las Vegas,USA,7.7,9,3
+1014,Noah Lee,Engineering,Backend Developer,78000,2019-12-15,29,Atlanta,USA,8.6,14,5
+1015,Olivia White,Sales,Sales Director,110000,2016-09-10,36,Dallas,USA,9.1,22,12
+1016,Paul Clark,Engineering,Security Engineer,88000,2020-04-03,31,Houston,USA,8.9,15,6
+1017,Quinn Hall,Marketing,Digital Marketing Specialist,52000,2022-01-20,23,Philadelphia,USA,7.6,7,2
+1018,Ruby Allen,Finance,Senior Accountant,65000,2019-07-11,30,San Antonio,USA,8.2,12,4
+1019,Sam Young,Engineering,Mobile Developer,75000,2021-08-25,28,San Jose,USA,8.1,11,5
+1020,Tina King,Product,Product Designer,73000,2020-11-14,27,Columbus,USA,8.5,13,4

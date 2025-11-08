@@ -1,0 +1,21 @@
+metric_id,date,department,metric_name,metric_value,target_value,variance_percent,notes
+MET001,2024-01-01,Engineering,Code Quality Score,85.2,80.0,6.5,Above target - excellent quality
+MET002,2024-01-01,Sales,Monthly Revenue,245000,220000,11.4,Strong Q1 start
+MET003,2024-01-01,Marketing,Lead Generation,158,150,5.3,Campaign performing well
+MET004,2024-01-01,HR,Employee Satisfaction,4.2,4.0,5.0,Positive feedback from surveys
+MET005,2024-01-01,Finance,Cost Efficiency,92.3,90.0,2.6,Operational improvements showing
+MET006,2024-01-15,Engineering,Sprint Velocity,42,40,5.0,Team productivity increasing
+MET007,2024-01-15,Sales,Conversion Rate,12.8,12.0,6.7,Sales training paying off
+MET008,2024-01-15,Marketing,Social Media Engagement,8.5,8.0,6.3,Content strategy working
+MET009,2024-01-15,HR,Training Hours per Employee,18,16,12.5,Professional development focus
+MET010,2024-01-15,Finance,Accounts Receivable Days,28,30,-6.7,Collections improving
+MET011,2024-02-01,Engineering,Bug Resolution Time,2.3,3.0,-23.3,Faster response times
+MET012,2024-02-01,Sales,Customer Acquisition Cost,125,150,-16.7,More efficient marketing spend
+MET013,2024-02-01,Marketing,Website Traffic,45000,40000,12.5,SEO improvements working
+MET014,2024-02-01,HR,Retention Rate,94.5,92.0,2.7,Low turnover maintained
+MET015,2024-02-01,Finance,Gross Margin,68.2,65.0,4.9,Product mix optimization
+MET016,2024-02-15,Engineering,Deployment Frequency,24,20,20.0,DevOps automation success
+MET017,2024-02-15,Sales,Pipeline Value,890000,800000,11.3,Strong prospect pipeline
+MET018,2024-02-15,Marketing,Email Open Rate,24.5,22.0,11.4,Improved subject lines
+MET019,2024-02-15,HR,Internal Promotion Rate,15.2,12.0,26.7,Career development success
+MET020,2024-02-15,Finance,Operating Cash Flow,156000,140000,11.4,Healthy cash position
