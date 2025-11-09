@@ -491,6 +491,8 @@ doctor: ## 🔍 Check system health and requirements
 	@echo "  • Full setup:     make setup-dev"
 	@echo "  • Start infra:    make start-infra"
 	@echo "  • Test Spark:     make test-spark-infra"
+	@echo "  • Build Motia Docker: make build-motia-docker"
+	@echo "  • Start Docker Stack: make start-motia-docker"
 	@echo "  • Clean Python:   make clean-python"
 	@echo "  • Start dev:      make dev"
 
@@ -740,6 +742,30 @@ shell-workflows: ## 💻 Open shell in workflows container
 	@cd $(WORKFLOWS_DIR) && $(SHELL)
 
 # =============================================================================
+# Docker Motia Integration
+# =============================================================================
+
+build-motia-docker: ## 🐳 Build Motia Docker image
+	@echo "$(PURPLE)🐳 Building Motia Docker image...$(NC)"
+	@cd $(WORKFLOWS_DIR) && docker build -t fabiocaffarello/motia-flows:latest --target runner .
+	@echo "$(GREEN)✅ Motia Docker image built successfully$(NC)"
+
+stop-motia-docker: ## 🛑 Stop Motia docker services
+	@echo "$(PURPLE)🛑 Stopping Motia docker services...$(NC)"
+	@$(DOCKER_COMPOSE) stop motia-flows
+	@echo "$(GREEN)✅ Motia docker services stopped$(NC)"
+
+logs-motia-docker: ## 📋 View Motia Docker logs
+	@echo "$(PURPLE)📋 Viewing Motia Docker logs...$(NC)"
+	@$(DOCKER_COMPOSE) logs -f motia-flows
+
+rebuild-motia: ## 🔄 Rebuild and restart Motia Docker
+	@echo "$(PURPLE)🔄 Rebuilding Motia...$(NC)"
+	@$(MAKE) build-motia-docker
+	@$(DOCKER_COMPOSE) up -d --force-recreate motia-flows
+	@echo "$(GREEN)✅ Motia rebuilt and restarted$(NC)"
+
+# =============================================================================
 # Quick Commands (aliases)
 # =============================================================================
 
@@ -752,6 +778,8 @@ spark-ui: open-spark ## 🌐 Alias for open-spark
 test-spark: test-spark-infra ## 🧪 Alias for test-spark-infra
 test-csv: test-csv-datasets ## 📊 Alias for test-csv-datasets
 spark-logs: logs-spark ## 📋 Alias for logs-spark
+docker-motia: start-motia-docker ## 🐳 Alias for start-motia-docker
+build-motia: build-motia-docker ## 🏗️ Alias for build-motia-docker
 spark-shell: spark-connect-shell ## ⚡ Alias for spark-connect-shell
 cleanup: cleanup-temp ## 🧹 Alias for cleanup-temp
 clean-py: clean-python ## 🐍 Alias for clean-python

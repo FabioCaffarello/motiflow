@@ -59,6 +59,24 @@ services:
     networks:
       - motiflow-network
 
+  motia-flows:
+    image: fabiocaffarello/motia-flows:latest
+    container_name: motia-flows
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - MOTIA_DOCKER=true
+    volumes:
+      # Mount datasets for analysis
+      - ../../datasets-examples:/app/datasets-examples:ro
+    depends_on:
+      - spark-connect
+      - minio
+    networks:
+      - motiflow-network
+    restart: unless-stopped
+
 volumes:
   minio-data:
   spark-warehouse:

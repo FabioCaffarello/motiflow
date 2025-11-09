@@ -1,0 +1,5 @@
+pandas==2.3.3
+pyarrow==22.0.0
+grpcio==1.76.0
+grpcio-status==1.76.0
+pyspark==4.0.1
