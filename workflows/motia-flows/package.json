@@ -6,7 +6,8 @@
     "dev": "motia dev",
     "generate-types": "motia generate-types",
     "build": "motia build",
-    "clean": "rm -rf dist node_modules python_modules .motia .mermaid"
+    "clean": "rm -rf dist node_modules python_modules .motia .mermaid",
+    "image": "docker build -t fabiocaffarello/motia-flows:latest --target runner ."
   },
   "keywords": [
     "motia"

@@ -29,10 +29,12 @@
 ### ⚡ Spark Analytics Engine
 
 - **Apache Spark 4.0.1** with Spark Connect for distributed data processing
-- **PySpark Integration** for Python-based data analytics
+- **PySpark Integration** for Python-based data analytics  
+- **Motia Workflow Integration** with REST API endpoints for analytics
+- **Real-time Analytics API** with employee, sales, generic, and SQL analysis types
 - **MinIO S3 Integration** for scalable data storage
-- **Real-time Processing** with streaming capabilities
-- **Jupyter-style Workflows** for interactive data science
+- **JSON-safe Response Handling** with automatic NaN/Infinity sanitization
+- **Docker-first Architecture** for consistent deployment and development
 
 ### 🤖 AI-Powered Chat Interface
 
@@ -190,6 +192,16 @@ make pyspark             # 🐍 Alias for spark-connect-shell
 make test-csv            # 📊 Alias for test-csv-datasets
 ```
 
+### 🐳 Docker Integration
+
+```bash
+make build-motia-docker  # 🐳 Build Motia Docker image
+make logs-motia-docker   # 📋 View Motia Docker logs
+make rebuild-motia       # 🔄 Rebuild and restart Motia Docker
+make docker-motia        # 🐳 Alias for start-motia-docker
+make build-motia         # 🏗️ Alias for build-motia-docker
+```
+
 ### 🔍 Quality & Testing
 
 ```bash
@@ -278,6 +290,42 @@ UV_NO_CACHE=0
 ---
 
 ## 🌐 API Integration
+
+### Spark Analytics REST API
+
+```typescript
+// Employee data analysis
+POST /spark/analyze
+{
+  "type": "employees",
+  "csvPath": "/opt/spark/examples/employees.csv",
+  "analysisType": "salary_by_department"
+}
+
+// Sales performance analysis  
+POST /spark/analyze
+{
+  "type": "sales",
+  "csvPath": "/opt/spark/examples/sales.csv",
+  "analysisType": "revenue_by_region"
+}
+
+// Generic data profiling
+POST /spark/analyze
+{
+  "type": "generic", 
+  "csvPath": "/opt/spark/examples/customer_reviews.csv",
+  "analysisType": "profile"
+}
+
+// Custom SQL queries
+POST /spark/analyze
+{
+  "type": "sql",
+  "csvPath": "/opt/spark/examples/employees.csv",
+  "sqlQuery": "SELECT department, AVG(salary) FROM data GROUP BY department"
+}
+```
 
 ### Chat API Endpoints
 
