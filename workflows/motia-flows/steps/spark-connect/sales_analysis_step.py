@@ -1,4 +1,3 @@
-import json
 import time
 from spark_utils import SparkConnectUtil, create_step_response, log_step_execution, handle_step_error
 
@@ -32,12 +31,12 @@ SALES_ANALYSES = {
             SELECT 
                 region,
                 COUNT(*) as total_sales,
-                ROUND(SUM(amount), 2) as total_revenue,
-                ROUND(AVG(amount), 2) as avg_sale_amount,
-                MIN(amount) as min_sale,
-                MAX(amount) as max_sale,
-                COUNT(DISTINCT sales_rep) as unique_reps,
-                COUNT(DISTINCT product) as unique_products
+                ROUND(SUM(total_amount), 2) as total_revenue,
+                ROUND(AVG(total_amount), 2) as avg_sale_amount,
+                MIN(total_amount) as min_sale,
+                MAX(total_amount) as max_sale,
+                COUNT(DISTINCT sales_rep_id) as unique_reps,
+                COUNT(DISTINCT product_name) as unique_products
             FROM sales 
             GROUP BY region 
             ORDER BY total_revenue DESC
@@ -53,15 +52,15 @@ SALES_ANALYSES = {
     "monthly_trends": {
         "query": """
             SELECT 
-                DATE_FORMAT(date, 'yyyy-MM') as month,
+                DATE_FORMAT(order_date, 'yyyy-MM') as month,
                 COUNT(*) as total_sales,
-                ROUND(SUM(amount), 2) as total_revenue,
-                ROUND(AVG(amount), 2) as avg_sale_amount,
-                COUNT(DISTINCT product) as unique_products,
-                COUNT(DISTINCT sales_rep) as active_reps,
+                ROUND(SUM(total_amount), 2) as total_revenue,
+                ROUND(AVG(total_amount), 2) as avg_sale_amount,
+                COUNT(DISTINCT product_name) as unique_products,
+                COUNT(DISTINCT sales_rep_id) as active_reps,
                 COUNT(DISTINCT region) as active_regions
             FROM sales 
-            GROUP BY DATE_FORMAT(date, 'yyyy-MM')
+            GROUP BY DATE_FORMAT(order_date, 'yyyy-MM')
             ORDER BY month
         """,
         "insights": [
@@ -75,17 +74,17 @@ SALES_ANALYSES = {
     "product_performance": {
         "query": """
             SELECT 
-                product,
+                product_name,
                 COUNT(*) as total_sales,
-                ROUND(SUM(amount), 2) as total_revenue,
-                ROUND(AVG(amount), 2) as avg_price,
+                ROUND(SUM(total_amount), 2) as total_revenue,
+                ROUND(AVG(total_amount), 2) as avg_price,
                 COUNT(DISTINCT region) as regions_sold,
-                COUNT(DISTINCT sales_rep) as reps_selling,
-                ROUND(STDDEV(amount), 2) as price_variance,
-                MIN(date) as first_sale_date,
-                MAX(date) as last_sale_date
+                COUNT(DISTINCT sales_rep_id) as reps_selling,
+                ROUND(STDDEV(total_amount), 2) as price_variance,
+                MIN(order_date) as first_sale_date,
+                MAX(order_date) as last_sale_date
             FROM sales 
-            GROUP BY product
+            GROUP BY product_name
             ORDER BY total_revenue DESC
         """,
         "insights": [
@@ -99,17 +98,17 @@ SALES_ANALYSES = {
     "sales_rep_analysis": {
         "query": """
             SELECT 
-                sales_rep,
+                sales_rep_id,
                 COUNT(*) as total_sales,
-                ROUND(SUM(amount), 2) as total_revenue,
-                ROUND(AVG(amount), 2) as avg_sale_amount,
-                COUNT(DISTINCT product) as products_sold,
+                ROUND(SUM(total_amount), 2) as total_revenue,
+                ROUND(AVG(total_amount), 2) as avg_sale_amount,
+                COUNT(DISTINCT product_name) as products_sold,
                 COUNT(DISTINCT region) as regions_covered,
-                MIN(date) as first_sale_date,
-                MAX(date) as last_sale_date,
-                DATEDIFF(MAX(date), MIN(date)) as active_days
+                MIN(order_date) as first_sale_date,
+                MAX(order_date) as last_sale_date,
+                DATEDIFF(MAX(order_date), MIN(order_date)) as active_days
             FROM sales 
-            GROUP BY sales_rep
+            GROUP BY sales_rep_id
             ORDER BY total_revenue DESC
         """,
         "insights": [
@@ -195,11 +194,11 @@ async def handler(input_data, context):
         
         # Generate summary insights from data
         total_sales = df.count()
-        total_revenue = df.agg({"amount": "sum"}).collect()[0][0]
-        avg_sale = df.agg({"amount": "avg"}).collect()[0][0]
-        unique_products = df.select("product").distinct().count()
+        total_revenue = df.agg({"total_amount": "sum"}).collect()[0][0]
+        avg_sale = df.agg({"total_amount": "avg"}).collect()[0][0]
+        unique_products = df.select("product_name").distinct().count()
         unique_regions = df.select("region").distinct().count()
-        unique_reps = df.select("sales_rep").distinct().count()
+        unique_reps = df.select("sales_rep_id").distinct().count()
         
         summary_insights = [
             f"Dataset contains {total_sales} sales transactions",

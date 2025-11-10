@@ -54,6 +54,7 @@ install: ## 📦 Install all dependencies (web + workflows + docker)
 	@$(MAKE) install-infra
 	@echo "$(GREEN)✅ All dependencies installed successfully!$(NC)"
 
+# perhaps need to install python dependencies manually source python_modules/bin/activate && pip install pyspark==4.0.1 pandas==2.3.3 pyarrow==22.0.0
 install-web: ## 🌐 Install web application dependencies
 	@echo "$(BLUE)📱 Installing web dependencies...$(NC)"
 	@cd $(WEB_DIR) && npm install
@@ -74,14 +75,32 @@ install-infra: ## 🐳 Setup Docker infrastructure
 	else \
 		echo "$(GREEN)✅ uv is available$(NC)"; \
 	fi
+	@echo "$(YELLOW)⚙️  Setting up Docker environment files...$(NC)"
 	@if [ ! -f $(DOCKER_ENV) ]; then \
-		echo "$(YELLOW)⚠️  Creating .env file from template...$(NC)"; \
+		echo "$(YELLOW)📝 Creating .env file from template...$(NC)"; \
 		if [ -f $(DOCKER_ENV).example ]; then \
 			cp $(DOCKER_ENV).example $(DOCKER_ENV) && \
 			sed -i '' '/# Copy this file to \.env and adjust values as needed/d' $(DOCKER_ENV); \
 		else \
 			echo "MINIO_USERNAME=minio\nMINIO_PASSWORD=minio123\nAWS_ACCESS_KEY_ID=minio\nAWS_SECRET_ACCESS_KEY=minio123\nMINIO_ACCESS_KEY=minio\nMINIO_SECRET_KEY=minio123" > $(DOCKER_ENV); \
 		fi; \
+		echo "$(GREEN)✅ .env file created$(NC)"; \
+	else \
+		echo "$(GREEN)✅ .env file already exists$(NC)"; \
+	fi
+	@if [ ! -f $(INFRA_DIR)/.env.next ]; then \
+		echo "$(YELLOW)📝 Creating .env.next file from template...$(NC)"; \
+		if [ -f $(INFRA_DIR)/.env.next.example ]; then \
+			cp $(INFRA_DIR)/.env.next.example $(INFRA_DIR)/.env.next && \
+			sed -i '' '/# Copy this file to \.env and adjust values as needed/d' $(INFRA_DIR)/.env.next; \
+			echo "$(GREEN)✅ .env.next file created from template$(NC)"; \
+		else \
+			echo "$(YELLOW)⚠️  .env.next.example not found, creating minimal .env.next...$(NC)"; \
+			echo "# NextJS Application Configuration for Docker\nPORT=4000\nMINIO_ENDPOINT=http://minio:9000\nMINIO_ACCESS_KEY=minio\nMINIO_SECRET_KEY=minio123\nMINIO_BUCKET=motiflow\nMINIO_USE_SSL=false\nNODE_ENV=production" > $(INFRA_DIR)/.env.next; \
+			echo "$(GREEN)✅ .env.next file created with defaults$(NC)"; \
+		fi; \
+	else \
+		echo "$(GREEN)✅ .env.next file already exists$(NC)"; \
 	fi
 	@echo "$(GREEN)✅ Infrastructure setup complete$(NC)"
 
@@ -89,25 +108,31 @@ install-infra: ## 🐳 Setup Docker infrastructure
 # Development
 # =============================================================================
 
-dev: ## 🚀 Start full development environment
-	@echo "$(GREEN)🚀 Starting full development environment...$(NC)"
+dev: ## � Start full Docker development environment
+	@echo "$(GREEN)� Starting full Docker development environment...$(NC)"
 	@$(MAKE) start-infra
-	@$(MAKE) dev-parallel
+	@$(MAKE) start-all-docker
+	@echo "$(GREEN)✅ Full Docker stack is running!$(NC)"
+	@echo "$(CYAN)🌍 Service URLs:$(NC)"
+	@echo "  • Motia Bridge:   http://localhost:4000"
+	@echo "  • Motia Flows:    http://localhost:3000"
+	@echo "  • MinIO Console:  http://localhost:9001"
+	@echo "  • MinIO API:      http://localhost:9000"
 
-dev-parallel: ## 🔄 Run web and workflows in parallel development mode
-	@echo "$(BLUE)🔄 Starting parallel development servers...$(NC)"
-	@trap 'kill 0' INT; \
-	(cd $(WEB_DIR) && npm run dev) & \
-	(cd $(WORKFLOWS_DIR) && npm run dev) & \
-	wait
+dev-docker: ## 🐳 Alias for dev (Docker development stack)
+	@$(MAKE) dev
 
-dev-web: ## 🌐 Start web application in development mode
-	@echo "$(BLUE)🌐 Starting web development server...$(NC)"
-	@cd $(WEB_DIR) && npm run dev
+dev-parallel: ## 📋 Legacy command - use 'make dev' for Docker development
+	@echo "$(YELLOW)⚠️  dev-parallel is deprecated. Use 'make dev' for Docker development.$(NC)"
+	@$(MAKE) dev
 
-dev-workflows: ## ⚙️ Start workflow engine in development mode
-	@echo "$(PURPLE)⚙️ Starting workflow development server...$(NC)"
-	@cd $(WORKFLOWS_DIR) && npm run dev
+dev-web: ## 📋 Legacy command - use 'make dev' for full Docker stack
+	@echo "$(YELLOW)⚠️  dev-web is deprecated. Use 'make dev' for full Docker stack.$(NC)"
+	@echo "$(CYAN)💡 For web-only logs: make logs-bridge-docker$(NC)"
+
+dev-workflows: ## 📋 Legacy command - use 'make dev' for full Docker stack
+	@echo "$(YELLOW)⚠️  dev-workflows is deprecated. Use 'make dev' for full Docker stack.$(NC)"
+	@echo "$(CYAN)💡 For workflow logs: make logs-motia-docker$(NC)"
 
 # =============================================================================
 # Building
@@ -180,6 +205,32 @@ test-csv-datasets: ## 📊 Test CSV datasets with Spark Connect
 	trap 'rm -rf .uv_tmp __pycache__ *.pyc 2>/dev/null || true' EXIT && \
 	uv run --no-project test_csv_datasets.py
 	@echo "$(GREEN)✅ CSV dataset tests completed$(NC)"
+
+test-docker-stack: ## 🐳 Test complete Docker stack integration
+	@echo "$(CYAN)🐳 Testing complete Docker stack integration...$(NC)"
+	@echo "$(YELLOW)⏳ Checking all services are running...$(NC)"
+	@if ! $(DOCKER_COMPOSE) ps | grep -q "Up.*minio"; then \
+		echo "$(RED)❌ MinIO not running - run 'make start-infra'$(NC)"; \
+		exit 1; \
+	fi
+	@if ! $(DOCKER_COMPOSE) ps | grep -q "Up.*spark-connect"; then \
+		echo "$(RED)❌ Spark Connect not running - run 'make start-spark'$(NC)"; \
+		exit 1; \
+	fi
+	@if ! $(DOCKER_COMPOSE) ps | grep -q "Up.*motia-flows"; then \
+		echo "$(RED)❌ Motia Flows not running - run 'make start-motia-docker'$(NC)"; \
+		exit 1; \
+	fi
+	@if ! $(DOCKER_COMPOSE) ps | grep -q "Up.*motia-bridge"; then \
+		echo "$(RED)❌ Motia Bridge not running - run 'make start-bridge-docker'$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✅ All Docker services are running$(NC)"
+	@echo "$(YELLOW)🧪 Testing service connectivity...$(NC)"
+	@curl -s http://localhost:4000 >/dev/null && echo "$(GREEN)✅ Motia Bridge accessible$(NC)" || echo "$(RED)❌ Motia Bridge not accessible$(NC)"
+	@curl -s http://localhost:3000 >/dev/null && echo "$(GREEN)✅ Motia Flows accessible$(NC)" || echo "$(RED)❌ Motia Flows not accessible$(NC)"
+	@curl -s http://localhost:9001 >/dev/null && echo "$(GREEN)✅ MinIO console accessible$(NC)" || echo "$(RED)❌ MinIO console not accessible$(NC)"
+	@echo "$(GREEN)✅ Docker stack integration test completed$(NC)"
 
 test-spark-connect: ## ⚡ Quick Spark Connect connectivity test
 	@echo "$(PURPLE)⚡ Testing Spark Connect connectivity...$(NC)"
@@ -324,25 +375,27 @@ wait-for-services: ## ⏳ Wait for services to be ready
 # Production Management
 # =============================================================================
 
-start: ## 🚀 Start all services in production mode
-	@echo "$(GREEN)🚀 Starting all services...$(NC)"
+start: ## � Start all Docker services
+	@echo "$(GREEN)� Starting all Docker services...$(NC)"
 	@$(MAKE) start-infra
-	@$(MAKE) start-web-prod
-	@$(MAKE) start-workflows-prod
+	@$(MAKE) start-all-docker
+	@echo "$(GREEN)✅ All Docker services started!$(NC)"
 
-start-web-prod: ## 🌐 Start web application in production mode
-	@echo "$(BLUE)🌐 Starting web in production mode...$(NC)"
-	@cd $(WEB_DIR) && npm start
+start-docker: dev ## 🐳 Alias for dev (Docker development stack)
 
-start-workflows-prod: ## ⚙️ Start workflow engine in production mode
-	@echo "$(PURPLE)⚙️ Starting workflows in production mode...$(NC)"
-	@cd $(WORKFLOWS_DIR) && npm start 2>/dev/null || echo "$(YELLOW)⚠️  No production start script$(NC)"
+start-web-prod: ## 📋 Legacy command - use Docker for production
+	@echo "$(YELLOW)⚠️  start-web-prod is deprecated. Use Docker containers for production.$(NC)"
+	@echo "$(CYAN)💡 Use 'make start' for Docker production stack$(NC)"
 
-stop: ## 🛑 Stop all services
-	@echo "$(RED)🛑 Stopping all services...$(NC)"
-	@pkill -f "next start" 2>/dev/null || true
-	@pkill -f "motia" 2>/dev/null || true
+start-workflows-prod: ## 📋 Legacy command - use Docker for production  
+	@echo "$(YELLOW)⚠️  start-workflows-prod is deprecated. Use Docker containers for production.$(NC)"
+	@echo "$(CYAN)💡 Use 'make start' for Docker production stack$(NC)"
+
+stop: ## 🛑 Stop all Docker services
+	@echo "$(RED)🛑 Stopping all Docker services...$(NC)"
 	@$(MAKE) stop-infra
+	@$(MAKE) stop-all-docker
+	@echo "$(GREEN)✅ All Docker services stopped$(NC)"
 
 restart: ## 🔄 Restart all services
 	@$(MAKE) stop
@@ -366,18 +419,30 @@ status: ## 📊 Show status of all services
 	@echo "$(BLUE)🐳 Docker Services:$(NC)"
 	@$(DOCKER_COMPOSE) ps 2>/dev/null || echo "$(RED)❌ Docker services not running$(NC)"
 	@echo ""
-	@echo "$(BLUE)🌐 Web Application:$(NC)"
-	@if pgrep -f "next" >/dev/null; then \
-		echo "$(GREEN)✅ NextJS running$(NC)"; \
+	@echo "$(BLUE)🌐 Motia Bridge (Docker):$(NC)"
+	@if $(DOCKER_COMPOSE) ps motia-bridge 2>/dev/null | grep -q "Up"; then \
+		echo "$(GREEN)✅ Motia Bridge running$(NC)"; \
 	else \
-		echo "$(RED)❌ NextJS not running$(NC)"; \
+		echo "$(RED)❌ Motia Bridge not running - run 'make start-bridge-docker'$(NC)"; \
 	fi
 	@echo ""
-	@echo "$(BLUE)⚙️ Workflow Engine:$(NC)"
-	@if pgrep -f "motia" >/dev/null; then \
-		echo "$(GREEN)✅ Motia running$(NC)"; \
+	@echo "$(BLUE)⚙️ Motia Flows (Docker):$(NC)"
+	@if $(DOCKER_COMPOSE) ps motia-flows 2>/dev/null | grep -q "Up"; then \
+		echo "$(GREEN)✅ Motia Flows running$(NC)"; \
 	else \
-		echo "$(RED)❌ Motia not running$(NC)"; \
+		echo "$(RED)❌ Motia Flows not running - run 'make start-motia-docker'$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(BLUE)⚡ Infrastructure Services:$(NC)"
+	@if $(DOCKER_COMPOSE) ps spark-connect 2>/dev/null | grep -q "Up"; then \
+		echo "$(GREEN)✅ Spark Connect running$(NC)"; \
+	else \
+		echo "$(RED)❌ Spark Connect not running - run 'make start-spark'$(NC)"; \
+	fi
+	@if $(DOCKER_COMPOSE) ps minio 2>/dev/null | grep -q "Up"; then \
+		echo "$(GREEN)✅ MinIO running$(NC)"; \
+	else \
+		echo "$(RED)❌ MinIO not running - run 'make start-minio'$(NC)"; \
 	fi
 	@echo ""
 	@echo "$(BLUE)🌍 Service Endpoints:$(NC)"
@@ -422,11 +487,12 @@ clean-python: ## 🐍 Clean Python cache, temporary files and uv artifacts
 	@uv cache clean 2>/dev/null || true
 	@echo "$(GREEN)✅ Python artifacts cleaned$(NC)"
 
-clean-docker: ## 🐳 Clean Docker data and containers
+clean-docker: ## 🧹 Clean Docker data and containers (see docker-cleanup for more complete cleaning)
 	@echo "$(CYAN)🧹 Cleaning Docker infrastructure...$(NC)"
 	@$(DOCKER_COMPOSE) down -v --remove-orphans
 	@docker system prune -f
 	@echo "$(YELLOW)⚠️  Note: This will remove Spark cluster state and checkpoints$(NC)"
+	@echo "$(CYAN)💡 For more complete cleanup including volumes: make docker-cleanup$(NC)"
 	@echo "$(GREEN)✅ Docker cleaned$(NC)"
 
 # =============================================================================
@@ -452,14 +518,14 @@ update: ## 🔄 Update all dependencies
 	@cd $(WORKFLOWS_DIR) && npm update
 	@echo "$(GREEN)✅ All dependencies updated$(NC)"
 
-setup-dev: ## 🛠️ Complete development environment setup
-	@echo "$(GREEN)🛠️ Setting up complete development environment...$(NC)"
+setup-dev: ## 🐳 Complete Docker development environment setup
+	@echo "$(GREEN)🐳 Setting up complete Docker development environment...$(NC)"
 	@$(MAKE) clean
 	@$(MAKE) install
-	@$(MAKE) build
+	@$(MAKE) build-all-docker
 	@$(MAKE) start-infra
 	@$(MAKE) cleanup-temp
-	@echo "$(GREEN)✅ Development environment ready! Run 'make dev' to start.$(NC)"
+	@echo "$(GREEN)✅ Docker development environment ready! Run 'make dev' to start.$(NC)"
 
 doctor: ## 🔍 Check system health and requirements
 	@echo "$(CYAN)🔍 System Health Check$(NC)"
@@ -471,7 +537,7 @@ doctor: ## 🔍 Check system health and requirements
 	@echo -n "$(BLUE)Docker: $(NC)"
 	@docker --version 2>/dev/null || echo "$(RED)❌ Not installed$(NC)"
 	@echo -n "$(BLUE)Docker Compose: $(NC)"
-	@docker-compose --version 2>/dev/null || echo "$(RED)❌ Not installed$(NC)"
+	@docker compose version 2>/dev/null || docker-compose --version 2>/dev/null || echo "$(RED)❌ Not installed$(NC)"
 	@echo -n "$(BLUE)Python3: $(NC)"
 	@python3 --version 2>/dev/null || echo "$(RED)❌ Not installed$(NC)"
 	@echo -n "$(BLUE)uv (Python package manager): $(NC)"
@@ -483,18 +549,37 @@ doctor: ## 🔍 Check system health and requirements
 	@if [ -d "infra-testing/spark" ]; then echo "$(GREEN)✅ Spark test environment$(NC)"; else echo "$(RED)❌ Spark test environment - directory missing$(NC)"; fi
 	@if [ -d "infra-testing/spark" ] && [ -f "infra-testing/spark/pyproject.toml" ]; then echo "$(GREEN)✅ Spark test dependencies configured$(NC)"; else echo "$(YELLOW)⚠️  Spark test pyproject.toml - check infra-testing/spark/$(NC)"; fi
 	@echo ""
+	@echo "$(BLUE)Docker Environment Configuration:$(NC)"
+	@if [ -f "$(DOCKER_ENV)" ]; then echo "$(GREEN)✅ Docker .env file configured$(NC)"; else echo "$(RED)❌ Docker .env file missing - run 'make install-infra'$(NC)"; fi
+	@if [ -f "$(INFRA_DIR)/.env.next" ]; then echo "$(GREEN)✅ Docker .env.next file configured$(NC)"; else echo "$(RED)❌ Docker .env.next file missing - run 'make install-infra'$(NC)"; fi
+	@if [ -f "$(INFRA_DIR)/.env.next.example" ]; then echo "$(GREEN)✅ Docker .env.next.example template available$(NC)"; else echo "$(YELLOW)⚠️  Docker .env.next.example template missing$(NC)"; fi
+	@echo ""
 	@echo "$(BLUE)Infrastructure Services:$(NC)"
 	@if curl -s http://localhost:9000/minio/health/live >/dev/null 2>&1; then echo "$(GREEN)✅ MinIO running$(NC)"; else echo "$(RED)❌ MinIO not running - run 'make start-minio'$(NC)"; fi
-	@if curl -s --connect-timeout 5 http://localhost:15002 >/dev/null 2>&1; then echo "$(GREEN)✅ Spark Connect running$(NC)"; else echo "$(RED)❌ Spark Connect not running - run 'make start-spark'$(NC)"; fi
+	@if nc -z localhost 15002 >/dev/null 2>&1; then \
+		if $(DOCKER_COMPOSE) ps spark-connect 2>/dev/null | grep -q "Up"; then \
+			echo "$(GREEN)✅ Spark Connect running$(NC)"; \
+		else \
+			echo "$(YELLOW)⚠️  Spark Connect port open but container not running$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Spark Connect not running - run 'make start-spark'$(NC)"; \
+	fi
+	@echo ""
+	@echo "$(BLUE)Docker Services Status:$(NC)"
+	@if $(DOCKER_COMPOSE) ps spark-connect 2>/dev/null | grep -q "Up"; then echo "$(GREEN)✅ Spark Connect (Docker)$(NC)"; else echo "$(RED)❌ Spark Connect (Docker) - run 'make start-spark'$(NC)"; fi
+	@if $(DOCKER_COMPOSE) ps motia-flows 2>/dev/null | grep -q "Up"; then echo "$(GREEN)✅ Motia Flows (Docker)$(NC)"; else echo "$(RED)❌ Motia Flows (Docker) - run 'make start-motia-docker'$(NC)"; fi
+	@if $(DOCKER_COMPOSE) ps motia-bridge 2>/dev/null | grep -q "Up"; then echo "$(GREEN)✅ Motia Bridge (Docker)$(NC)"; else echo "$(RED)❌ Motia Bridge (Docker) - run 'make start-bridge-docker'$(NC)"; fi
 	@echo ""
 	@echo "$(BLUE)Quick Start Commands:$(NC)"
-	@echo "  • Full setup:     make setup-dev"
-	@echo "  • Start infra:    make start-infra"
-	@echo "  • Test Spark:     make test-spark-infra"
-	@echo "  • Build Motia Docker: make build-motia-docker"
-	@echo "  • Start Docker Stack: make start-motia-docker"
-	@echo "  • Clean Python:   make clean-python"
-	@echo "  • Start dev:      make dev"
+	@echo "  • Docker setup:       make setup-dev"
+	@echo "  • Start Docker stack: make dev"
+	@echo "  • Start infra:        make start-infra"
+	@echo "  • Test Docker stack:  make test-docker-stack"
+	@echo "  • Check Docker:       make docker-status"
+	@echo "  • Test Spark:         make test-spark-infra"
+	@echo "  • Build all Docker:   make build-all-docker"
+	@echo "  • Clean Python:       make clean-python"
 
 # =============================================================================
 # Cleanup & Optimization
@@ -724,13 +809,10 @@ open-spark: ## 🌐 Open Spark UI in browser (when available)
 	@echo "$(YELLOW)💡 Spark UI available when jobs are running: http://localhost:4040-4045$(NC)"
 	@open http://localhost:4040 2>/dev/null || echo "Visit http://localhost:4040 when Spark jobs are running"
 
-open-web: ## 🌐 Open web application in browser
-	@echo "$(BLUE)🌐 Opening web application...$(NC)"
-	@open http://localhost:4000 2>/dev/null || echo "Visit http://localhost:4000"
-
-open-workflows: ## 🌐 Open Motia UI for workflows
-	@echo "$(PURPLE)🌐 Opening Motia UI for workflows...$(NC)"
-	@echo "$(YELLOW)💡 Motia UI available at: http://localhost:4000$(NC)"
+open-web: ## 🌐 Open web application in browser (Motia Bridge + Motia Flows)
+	@echo "$(BLUE)🌐 Opening Motia application...$(NC)"
+	@echo "$(CYAN)💡 Motia Bridge (main UI): http://localhost:4000$(NC)"
+	@echo "$(PURPLE)💡 Motia Flows (workflow engine): http://localhost:3000$(NC)"
 	@open http://localhost:4000 2>/dev/null || echo "Visit http://localhost:4000"
 
 shell-web: ## 💻 Open shell in web container
@@ -747,17 +829,88 @@ shell-workflows: ## 💻 Open shell in workflows container
 
 build-motia-docker: ## 🐳 Build Motia Docker image
 	@echo "$(PURPLE)🐳 Building Motia Docker image...$(NC)"
-	@cd $(WORKFLOWS_DIR) && docker build -t fabiocaffarello/motia-flows:latest --target runner .
+	@cd $(WORKFLOWS_DIR) && npm run image
 	@echo "$(GREEN)✅ Motia Docker image built successfully$(NC)"
+
+build-bridge-docker: ## 🌐 Build Motia Bridge Docker image
+	@echo "$(BLUE)🌐 Building Motia Bridge Docker image...$(NC)"
+	@cd $(WEB_DIR) && npm run image
+	@echo "$(GREEN)✅ Motia Bridge Docker image built successfully$(NC)"
+
+build-all-docker: ## 🐳 Build all Docker images (motia-flows + motia-bridge)
+	@echo "$(CYAN)🐳 Building all Docker images...$(NC)"
+	@$(MAKE) build-motia-docker
+	@$(MAKE) build-bridge-docker
+	@echo "$(GREEN)✅ All Docker images built successfully$(NC)"
+
+docker-status: ## 📊 Check all Docker containers status
+	@echo "$(CYAN)📊 Docker Containers Status$(NC)"
+	@echo "============================="
+	@echo "$(BLUE)🐳 All Docker Services:$(NC)"
+	@$(DOCKER_COMPOSE) ps 2>/dev/null || echo "$(RED)❌ Docker services not running$(NC)"
+	@echo ""
+	@echo "$(BLUE)🔍 Individual Service Status:$(NC)"
+	@if $(DOCKER_COMPOSE) ps motia-flows 2>/dev/null | grep -q "Up"; then echo "$(GREEN)✅ Motia Flows$(NC)"; else echo "$(RED)❌ Motia Flows$(NC)"; fi
+	@if $(DOCKER_COMPOSE) ps motia-bridge 2>/dev/null | grep -q "Up"; then echo "$(GREEN)✅ Motia Bridge$(NC)"; else echo "$(RED)❌ Motia Bridge$(NC)"; fi
+	@if $(DOCKER_COMPOSE) ps spark-connect 2>/dev/null | grep -q "Up"; then echo "$(GREEN)✅ Spark Connect$(NC)"; else echo "$(RED)❌ Spark Connect$(NC)"; fi
+	@if $(DOCKER_COMPOSE) ps minio 2>/dev/null | grep -q "Up"; then echo "$(GREEN)✅ MinIO$(NC)"; else echo "$(RED)❌ MinIO$(NC)"; fi
+	@echo ""
+	@echo "$(BLUE)🌐 Service Endpoints:$(NC)"
+	@echo "  • Motia Bridge:   http://localhost:4000"
+	@echo "  • Motia Flows:    http://localhost:3000"
+	@echo "  • MinIO Console:  http://localhost:9001"
+	@echo "  • MinIO API:      http://localhost:9000"
+	@echo "  • Spark Connect:  sc://localhost:15002"
+
+docker-cleanup: ## 🧹 Clean Docker containers and images
+	@echo "$(YELLOW)🧹 Cleaning Docker containers and images...$(NC)"
+	@echo "$(RED)⚠️  This will remove all stopped containers, networks, and unused images$(NC)"
+	@$(DOCKER_COMPOSE) down -v --remove-orphans
+	@docker system prune -f
+	@docker volume prune -f
+	@echo "$(GREEN)✅ Docker cleanup completed$(NC)"
 
 stop-motia-docker: ## 🛑 Stop Motia docker services
 	@echo "$(PURPLE)🛑 Stopping Motia docker services...$(NC)"
 	@$(DOCKER_COMPOSE) stop motia-flows
 	@echo "$(GREEN)✅ Motia docker services stopped$(NC)"
 
+stop-bridge-docker: ## 🛑 Stop Motia Bridge docker service
+	@echo "$(BLUE)🛑 Stopping Motia Bridge docker service...$(NC)"
+	@$(DOCKER_COMPOSE) stop motia-bridge
+	@echo "$(GREEN)✅ Motia Bridge docker service stopped$(NC)"
+
+stop-all-docker: ## 🛑 Stop all Motia docker services
+	@echo "$(CYAN)🛑 Stopping all Motia docker services...$(NC)"
+	@$(DOCKER_COMPOSE) stop motia-flows motia-bridge
+	@echo "$(GREEN)✅ All Motia docker services stopped$(NC)"
+
+start-motia-docker: ## 🚀 Start Motia Flows docker service
+	@echo "$(PURPLE)🚀 Starting Motia Flows docker service...$(NC)"
+	@$(DOCKER_COMPOSE) up -d motia-flows
+	@echo "$(GREEN)✅ Motia Flows docker service started$(NC)"
+
+start-bridge-docker: ## 🚀 Start Motia Bridge docker service
+	@echo "$(BLUE)🚀 Starting Motia Bridge docker service...$(NC)"
+	@$(DOCKER_COMPOSE) up -d motia-bridge
+	@echo "$(GREEN)✅ Motia Bridge docker service started$(NC)"
+
+start-all-docker: ## 🚀 Start all Motia docker services
+	@echo "$(CYAN)🚀 Starting all Motia docker services...$(NC)"
+	@$(DOCKER_COMPOSE) up -d motia-flows motia-bridge
+	@echo "$(GREEN)✅ All Motia docker services started$(NC)"
+
 logs-motia-docker: ## 📋 View Motia Docker logs
 	@echo "$(PURPLE)📋 Viewing Motia Docker logs...$(NC)"
 	@$(DOCKER_COMPOSE) logs -f motia-flows
+
+logs-bridge-docker: ## 📋 View Motia Bridge Docker logs
+	@echo "$(BLUE)📋 Viewing Motia Bridge Docker logs...$(NC)"
+	@$(DOCKER_COMPOSE) logs -f motia-bridge
+
+logs-all-docker: ## 📋 View all Motia Docker logs
+	@echo "$(CYAN)📋 Viewing all Motia Docker logs...$(NC)"
+	@$(DOCKER_COMPOSE) logs -f motia-flows motia-bridge
 
 rebuild-motia: ## 🔄 Rebuild and restart Motia Docker
 	@echo "$(PURPLE)🔄 Rebuilding Motia...$(NC)"
@@ -765,24 +918,51 @@ rebuild-motia: ## 🔄 Rebuild and restart Motia Docker
 	@$(DOCKER_COMPOSE) up -d --force-recreate motia-flows
 	@echo "$(GREEN)✅ Motia rebuilt and restarted$(NC)"
 
+rebuild-bridge: ## 🔄 Rebuild and restart Motia Bridge Docker
+	@echo "$(BLUE)🔄 Rebuilding Motia Bridge...$(NC)"
+	@$(MAKE) build-bridge-docker
+	@$(DOCKER_COMPOSE) up -d --force-recreate motia-bridge
+	@echo "$(GREEN)✅ Motia Bridge rebuilt and restarted$(NC)"
+
+rebuild-all: ## 🔄 Rebuild and restart all Motia services
+	@echo "$(CYAN)🔄 Rebuilding all Motia services...$(NC)"
+	@$(MAKE) build-all-docker
+	@$(DOCKER_COMPOSE) up -d --force-recreate motia-flows motia-bridge
+	@echo "$(GREEN)✅ All Motia services rebuilt and restarted$(NC)"
+
 # =============================================================================
 # Quick Commands (aliases)
 # =============================================================================
 
-up: start-infra ## 🚀 Alias for start-infra
+up: start-infra ## 🚀 Alias for start-infra  
+up-docker: start ## 🐳 Alias for start (Docker services)
 down: stop-infra ## 🛑 Alias for stop-infra
-web: dev-web ## 🌐 Alias for dev-web
-workflows: dev-workflows ## ⚙️ Alias for dev-workflows
+down-docker: stop ## 🛑 Alias for stop (Docker services)
+dev-stack: dev ## 🐳 Alias for dev (Docker development)
+web: logs-bridge-docker ## 🌐 View web application logs (Docker)
+workflows: logs-motia-docker ## ⚙️ View workflows logs (Docker)
 pyspark: spark-connect-shell ## 🐍 Alias for spark-connect-shell
 spark-ui: open-spark ## 🌐 Alias for open-spark
 test-spark: test-spark-infra ## 🧪 Alias for test-spark-infra
 test-csv: test-csv-datasets ## 📊 Alias for test-csv-datasets
 spark-logs: logs-spark ## 📋 Alias for logs-spark
 docker-motia: start-motia-docker ## 🐳 Alias for start-motia-docker
+docker-bridge: start-bridge-docker ## 🌐 Alias for start-bridge-docker
+docker-all: start-all-docker ## 🚀 Alias for start-all-docker
 build-motia: build-motia-docker ## 🏗️ Alias for build-motia-docker
+build-bridge: build-bridge-docker ## 🏗️ Alias for build-bridge-docker
+build-all: build-all-docker ## 🏗️ Alias for build-all-docker
+logs-motia: logs-motia-docker ## 📋 Alias for logs-motia-docker
+logs-bridge: logs-bridge-docker ## 📋 Alias for logs-bridge-docker
+logs-all: logs-all-docker ## 📋 Alias for logs-all-docker
 spark-shell: spark-connect-shell ## ⚡ Alias for spark-connect-shell
 cleanup: cleanup-temp ## 🧹 Alias for cleanup-temp
 clean-py: clean-python ## 🐍 Alias for clean-python
+
+# Unified command aliases
+setup-docker: setup-dev ## 🐳 Alias for setup-dev (unified Docker setup)
+stop-docker: stop ## 🛑 Alias for stop (unified Docker stop)
+open-workflows: open-web ## 🌐 Alias for open-web (unified web interface)
 
 # Documentation aliases
 roadmap: check-roadmap ## 📋 Alias for check-roadmap

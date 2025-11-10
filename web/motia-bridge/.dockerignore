@@ -1,0 +1,17 @@
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+README.md
+.env
+.env.local
+.env.production.local
+.env.staging
+.gitignore
+.git
+.next
+.vercel
+coverage
+.nyc_output
+.DS_Store
+*.log

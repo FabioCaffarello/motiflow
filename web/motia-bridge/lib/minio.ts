@@ -1,7 +1,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
 export const minioClient = new S3Client({
-  endpoint: process.env.MINIO_ENDPOINT || "http://localhost:9000",
+  endpoint: process.env.MINIO_ENDPOINT || "http://minio:9000",
   region: "us-east-1", // MinIO requires a region, but any value works
   credentials: {
     accessKeyId: process.env.MINIO_ACCESS_KEY || "minio",
