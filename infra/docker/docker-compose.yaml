@@ -77,6 +77,24 @@ services:
       - motiflow-network
     restart: unless-stopped
 
+  motia-bridge:
+    image: fabiocaffarello/motia-bridge:latest
+    container_name: motia-bridge
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - HOSTNAME=0.0.0.0
+    env_file:
+      - .env.next
+    depends_on:
+      - motia-flows
+      - minio
+    networks:
+      - motiflow-network
+    restart: unless-stopped
+
 volumes:
   minio-data:
   spark-warehouse:

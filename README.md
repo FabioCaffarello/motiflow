@@ -64,7 +64,7 @@
 - **TypeScript** throughout the entire stack
 - **Comprehensive Makefile** with 50+ automation commands
 - **Hot Reload** development environment
-- **Docker Compose** for seamless local development
+- **Docker Compose** for seamless containerized development
 - **uv Package Manager** for ultra-fast Python operations
 - **Intelligent Health Checks** for service reliability
 
@@ -116,24 +116,27 @@ motiflow/
 git clone https://github.com/FabioCaffarello/motiflow
 cd motiflow
 
-# Complete development environment setup
-make setup-dev
+# Complete Docker environment setup
+make setup-docker
 ```
 
 ### 2️⃣ Start Development
 
 ```bash
-# Start full development environment
-make dev
+# Complete Docker environment setup
+make setup-docker
+
+# Start full Docker development stack
+make dev-docker
 ```
 
-This command will:
+This will start:
 
-- 🐳 Start MinIO S3-compatible storage
-- ⚡ Launch Apache Spark Connect cluster  
-- 🌐 Launch NextJS web app on <http://localhost:4000>
-- ⚙️ Start Motia workflow engine
-- ⏳ Wait for all services to be ready with intelligent health checks
+- 🐳 MinIO S3-compatible storage
+- ⚡ Apache Spark Connect cluster  
+- 🌐 NextJS web app on <http://localhost:4000>
+- ⚙️ Motia workflow engine on <http://localhost:3000>
+- ⏳ Intelligent health checks with automatic service detection
 
 ### 3️⃣ Access Applications
 
@@ -152,9 +155,9 @@ Our comprehensive Makefile provides everything you need:
 ### 🛠️ Development
 
 ```bash
-make dev                 # 🚀 Start full development environment
-make dev-web             # 🌐 Web app only
-make dev-workflows       # ⚙️ Workflows only
+make dev-docker          # 🚀 Start full Docker development stack
+make setup-docker        # 🛠️ Complete Docker environment setup
+make docker-status       # 📊 Check all Docker containers status
 make status              # 📊 Check all services status
 ```
 
@@ -194,12 +197,35 @@ make test-csv            # 📊 Alias for test-csv-datasets
 
 ### 🐳 Docker Integration
 
+#### Motia Bridge Docker Commands
+
 ```bash
-make build-motia-docker  # 🐳 Build Motia Docker image
-make logs-motia-docker   # 📋 View Motia Docker logs
-make rebuild-motia       # 🔄 Rebuild and restart Motia Docker
+make build-bridge-docker  # 🐳 Build Motia Bridge Docker image
+make start-bridge-docker  # 🚀 Start Motia Bridge in Docker container
+make logs-bridge-docker   # 📋 View Motia Bridge Docker logs
+make rebuild-bridge       # 🔄 Rebuild and restart Motia Bridge Docker
+make docker-bridge        # 🐳 Alias for start-bridge-docker
+make build-bridge         # 🏗️ Alias for build-bridge-docker
+```
+
+#### Motia Workflows Docker Commands
+
+```bash
+make build-motia-docker  # 🐳 Build Motia Workflows Docker image
+make logs-motia-docker   # 📋 View Motia Workflows Docker logs
+make rebuild-motia       # 🔄 Rebuild and restart Motia Workflows Docker
 make docker-motia        # 🐳 Alias for start-motia-docker
 make build-motia         # 🏗️ Alias for build-motia-docker
+```
+
+#### Full Stack Docker Commands
+
+```bash
+make setup-docker        # 🛠️ Complete Docker environment setup
+make dev-docker          # 🚀 Start full dockerized development stack
+make test-docker-stack   # 🧪 Test complete Docker stack integration
+make docker-status       # 📊 Check all Docker containers status
+make docker-cleanup      # 🧹 Clean Docker containers and images
 ```
 
 ### 🔍 Quality & Testing
@@ -219,8 +245,7 @@ make clean-python       # 🐍 Clean Python caches & temp files
 make help               # 📚 Show all available commands (50+)
 make doctor             # 🔍 Complete system health check
 make cleanup-temp       # 🧹 Clean temporary files
-make up                 # ⚡ Alias for start-infra
-make web                # ⚡ Alias for dev-web
+make docker-status      # 📊 Check Docker containers status
 make open-minio         # 🌐 Open MinIO console in browser
 make open-web           # 🌐 Open web app in browser
 ```
@@ -276,6 +301,22 @@ AWS_ACCESS_KEY_ID=minio
 AWS_SECRET_ACCESS_KEY=minio123
 MINIO_ACCESS_KEY=minio
 MINIO_SECRET_KEY=minio123
+```
+
+#### Docker Environment (`infra/docker/.env.next`)
+
+```env
+# NextJS Application Configuration for Docker
+NEXT_PUBLIC_API_URL=http://localhost:3000
+MINIO_ENDPOINT=http://minio:9000
+MINIO_ACCESS_KEY=minio
+MINIO_SECRET_KEY=minio123
+MINIO_BUCKET=motiflow
+MINIO_USE_SSL=false
+
+# Application Settings
+NODE_ENV=production
+PORT=4000
 ```
 
 #### Spark Environment Variables
@@ -431,8 +472,8 @@ Ready-to-use realistic datasets for testing and demonstrations:
 ### 1. Feature Development
 
 ```bash
-# Start development environment
-make dev
+# Start Docker development environment
+make dev-docker
 
 # Make changes to code
 # Files auto-reload in development
@@ -440,6 +481,10 @@ make dev
 # Check code quality
 make lint
 make test
+
+# Monitor services
+make docker-status
+make logs
 ```
 
 ### 2. Testing Spark Analytics
@@ -484,11 +529,24 @@ make status
 make open-minio
 ```
 
+### 4. Monitoring and Workflow Testing
+
+```bash
+# Ensure infrastructure is running
+make status
+
+# Test file upload via web interface at localhost:4000
+# Check MinIO console for uploaded files
+make open-minio
+```
+
 ### 4. Workflow Testing
 
 ```bash
-# Start workflows in development
-make dev-workflows
+# Monitor Docker services
+make docker-status
+make logs-bridge-docker
+make logs-motia-docker
 
 # Test API endpoints
 # Monitor logs for debugging
@@ -580,7 +638,7 @@ make test-spark-connect
 
 # Reset everything
 make clean
-make setup-dev
+make setup-docker
 ```
 
 #### Spark Connect Issues
@@ -627,6 +685,39 @@ make clean-workflows
 make install-workflows
 ```
 
+#### Docker-Specific Issues
+
+```bash
+# Check all Docker containers status
+make docker-status
+
+# View specific Docker service logs
+make logs-bridge-docker    # Motia Bridge logs
+make logs-motia-docker     # Motia Workflows logs
+
+# Rebuild Docker images
+make rebuild-bridge        # Rebuild Motia Bridge
+make rebuild-motia         # Rebuild Motia Workflows
+
+# Complete Docker environment reset
+make stop-infra
+make docker-cleanup
+make setup-docker
+```
+
+#### MinIO Docker Connection Issues
+
+```bash
+# Check MinIO endpoint configuration
+cat infra/docker/.env.next | grep MINIO_ENDPOINT
+
+# Should show: MINIO_ENDPOINT=http://minio:9000
+# If missing http://, update the configuration
+
+# Test MinIO connection from Docker container
+make logs-bridge-docker    # Check for MinIO connection errors
+```
+
 ### Debug Commands
 
 ```bash
@@ -670,7 +761,7 @@ uv cache clean           # Clear uv cache for fresh installs
 
 # Optimize Docker volumes
 make clean-docker        # Reset Docker state
-make setup-dev           # Rebuild optimized environment
+make setup-docker        # Rebuild optimized environment
 
 # Monitor performance
 make logs-spark          # Watch Spark performance logs
@@ -684,9 +775,9 @@ make spark-status        # Check detailed Spark metrics
 ### Development Setup
 
 1. **Fork the repository**
-2. **Complete environment setup**: `make setup-dev`
+2. **Complete Docker environment setup**: `make setup-docker`
 3. **Create feature branch**: `git checkout -b feature/amazing-feature`
-4. **Start development**: `make dev`
+4. **Start Docker development**: `make dev-docker`
 5. **Test your changes**: `make check && make test-csv-datasets`
 6. **Submit pull request**
 
@@ -702,7 +793,7 @@ make spark-status        # Check detailed Spark metrics
 
 ```bash
 # Before committing, run full test suite
-make clean && make setup-dev
+make clean && make setup-docker
 make test-spark-infra
 make test-csv-datasets  
 make test
@@ -712,6 +803,22 @@ make lint
 make format
 make check
 ```
+
+### 🐳 Docker Development
+
+**Benefits of Docker-First Approach:**
+
+- ✅ **Consistent Environment**: Identical setup across all machines
+- ✅ **Easy Onboarding**: One command setup for new developers  
+- ✅ **Production Parity**: Exact same environment as deployment
+- ✅ **Isolated Dependencies**: No conflicts with system packages
+- ✅ **Auto-Configuration**: Environment files automatically created
+
+**Key Configuration Files:**
+
+- **Docker Environment**: `infra/docker/.env.next`
+- **Infrastructure**: `infra/docker/.env`
+- **Docker Compose**: `infra/docker/docker-compose.yaml`
 
 ### 🚀 Adding New Features
 
@@ -738,11 +845,12 @@ make check
 ### Workflow Guidelines
 
 - **Use `make` commands** for all development operations
-- **Test locally** with `make dev` environment
+- **Docker-first** development with `make dev-docker` environment
 - **Document changes** in README and code comments
 - **Update examples** when adding new features
 - **Follow semantic commit** messages
 - **Test infrastructure** with `make doctor`
+- **Monitor services** with `make docker-status`
 
 ---
 

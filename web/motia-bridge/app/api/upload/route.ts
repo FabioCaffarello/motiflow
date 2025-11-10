@@ -117,7 +117,7 @@ export async function POST(req: Request) {
             objectKey,
             size,
             contentType: f.type,
-            url: `http://localhost:9000/${MINIO_BUCKET}/${objectKey}`,
+            url: `http://minio:9000/${MINIO_BUCKET}/${objectKey}`,
             fileType: {
               isArchive,
               isImage,
