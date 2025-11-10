@@ -54,7 +54,6 @@ install: ## 📦 Install all dependencies (web + workflows + docker)
 	@$(MAKE) install-infra
 	@echo "$(GREEN)✅ All dependencies installed successfully!$(NC)"
 
-# perhaps need to install python dependencies manually source python_modules/bin/activate && pip install pyspark==4.0.1 pandas==2.3.3 pyarrow==22.0.0
 install-web: ## 🌐 Install web application dependencies
 	@echo "$(BLUE)📱 Installing web dependencies...$(NC)"
 	@cd $(WEB_DIR) && npm install
@@ -121,18 +120,6 @@ dev: ## � Start full Docker development environment
 
 dev-docker: ## 🐳 Alias for dev (Docker development stack)
 	@$(MAKE) dev
-
-dev-parallel: ## 📋 Legacy command - use 'make dev' for Docker development
-	@echo "$(YELLOW)⚠️  dev-parallel is deprecated. Use 'make dev' for Docker development.$(NC)"
-	@$(MAKE) dev
-
-dev-web: ## 📋 Legacy command - use 'make dev' for full Docker stack
-	@echo "$(YELLOW)⚠️  dev-web is deprecated. Use 'make dev' for full Docker stack.$(NC)"
-	@echo "$(CYAN)💡 For web-only logs: make logs-bridge-docker$(NC)"
-
-dev-workflows: ## 📋 Legacy command - use 'make dev' for full Docker stack
-	@echo "$(YELLOW)⚠️  dev-workflows is deprecated. Use 'make dev' for full Docker stack.$(NC)"
-	@echo "$(CYAN)💡 For workflow logs: make logs-motia-docker$(NC)"
 
 # =============================================================================
 # Building
@@ -382,14 +369,6 @@ start: ## � Start all Docker services
 	@echo "$(GREEN)✅ All Docker services started!$(NC)"
 
 start-docker: dev ## 🐳 Alias for dev (Docker development stack)
-
-start-web-prod: ## 📋 Legacy command - use Docker for production
-	@echo "$(YELLOW)⚠️  start-web-prod is deprecated. Use Docker containers for production.$(NC)"
-	@echo "$(CYAN)💡 Use 'make start' for Docker production stack$(NC)"
-
-start-workflows-prod: ## 📋 Legacy command - use Docker for production  
-	@echo "$(YELLOW)⚠️  start-workflows-prod is deprecated. Use Docker containers for production.$(NC)"
-	@echo "$(CYAN)💡 Use 'make start' for Docker production stack$(NC)"
 
 stop: ## 🛑 Stop all Docker services
 	@echo "$(RED)🛑 Stopping all Docker services...$(NC)"
