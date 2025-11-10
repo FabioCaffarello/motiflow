@@ -1,6 +1,11 @@
 import json
 import time
-from spark_utils import SparkConnectUtil, create_step_response, log_step_execution, handle_step_error
+from spark_utils import (
+    SparkConnectUtil,
+    create_step_response,
+    log_step_execution,
+    handle_step_error,
+)
 
 config = {
     "type": "event",
@@ -13,16 +18,25 @@ config = {
         "properties": {
             "analysisType": {
                 "type": "string",
-                "enum": ["salary_by_department", "experience_distribution", "department_summary", "salary_statistics", "all"],
-                "default": "salary_by_department"
+                "enum": [
+                    "salary_by_department",
+                    "experience_distribution",
+                    "department_summary",
+                    "salary_statistics",
+                    "all",
+                ],
+                "default": "salary_by_department",
             },
-            "csvPath": {"type": "string", "default": "/datasets-examples/employees.csv"},
+            "csvPath": {
+                "type": "string",
+                "default": "/datasets-examples/employees.csv",
+            },
             "sparkUrl": {"type": "string", "default": "sc://spark-connect:15002"},
-            "appName": {"type": "string", "default": "motia-employee-analyzer"}
+            "appName": {"type": "string", "default": "motia-employee-analyzer"},
         },
-        "required": ["csvPath"]
+        "required": ["csvPath"],
     },
-    "flows": ["spark-analysis"]
+    "flows": ["spark-analysis"],
 }
 
 # Define analysis queries and insights
@@ -45,10 +59,9 @@ EMPLOYEE_ANALYSES = {
             "Shows salary distribution across departments",
             "Identifies departments with highest compensation",
             "Reveals salary variance within departments",
-            "Compares median vs average salaries by department"
-        ]
+            "Compares median vs average salaries by department",
+        ],
     },
-    
     "experience_distribution": {
         "query": """
             SELECT 
@@ -70,10 +83,9 @@ EMPLOYEE_ANALYSES = {
             "Categorizes employees by experience level",
             "Shows salary progression with experience",
             "Identifies experience distribution by department",
-            "Reveals compensation patterns across seniority levels"
-        ]
+            "Reveals compensation patterns across seniority levels",
+        ],
     },
-    
     "department_summary": {
         "query": """
             SELECT 
@@ -94,10 +106,9 @@ EMPLOYEE_ANALYSES = {
             "Comprehensive departmental overview",
             "Shows team size and experience composition",
             "Compares departments by key metrics",
-            "Identifies departments with junior vs senior talent"
-        ]
+            "Identifies departments with junior vs senior talent",
+        ],
     },
-    
     "salary_statistics": {
         "query": """
             SELECT 
@@ -132,96 +143,99 @@ EMPLOYEE_ANALYSES = {
             "Detailed salary statistics across the organization",
             "Compares median vs mean salary by department",
             "Shows salary quartiles and distribution",
-            "Identifies potential salary inequities"
-        ]
-    }
+            "Identifies potential salary inequities",
+        ],
+    },
 }
 
 
 async def handler(input_data, context):
     """
     Analyze employee data using PySpark with predefined HR analytics queries
-    
+
     Supports multiple analysis types:
     - Salary analysis by department
-    - Experience level distribution  
+    - Experience level distribution
     - Department summaries
     - Comprehensive salary statistics
     """
     start_time = time.time()
-    
+
     # Extract input parameters
     analysis_type = input_data.get("analysisType", "salary_by_department")
     csv_path = input_data.get("csvPath", "/datasets-examples/employees.csv")
     spark_url = input_data.get("sparkUrl", "sc://spark-connect:15002")
     app_name = input_data.get("appName", "motia-employee-analyzer")
-    
-    log_step_execution(context, "spark.employees.analyze",
-                      analysisType=analysis_type,
-                      csvPath=csv_path,
-                      sparkUrl=spark_url)
-    
+
+    log_step_execution(
+        context,
+        "spark.employees.analyze",
+        analysisType=analysis_type,
+        csvPath=csv_path,
+        sparkUrl=spark_url,
+    )
+
     spark_util = None
-    
+
     try:
         # Initialize Spark utility
         spark_util = SparkConnectUtil(spark_url=spark_url, app_name=app_name)
-        
+
         # Load employee data
         context.logger.info("Loading employee data", {"csvPath": csv_path})
         df = spark_util.load_csv(csv_path)
-        
+
         # Register as temporary view
         df.createOrReplaceTempView("employees")
-        
+
         results = {}
         all_insights = []
-        
+
         # Determine which analyses to run
         if analysis_type == "all":
             analyses_to_run = list(EMPLOYEE_ANALYSES.keys())
         else:
             analyses_to_run = [analysis_type]
-        
+
         # Execute selected analyses
         for analysis_name in analyses_to_run:
             if analysis_name in EMPLOYEE_ANALYSES:
                 context.logger.info(f"Running {analysis_name} analysis")
-                
+
                 analysis_config = EMPLOYEE_ANALYSES[analysis_name]
                 query = analysis_config["query"]
                 insights = analysis_config["insights"]
-                
+
                 # Execute query
                 query_start_time = time.time()
                 result_df = spark_util.get_spark_session().sql(query)
                 query_result = spark_util.df_to_dict(result_df)
                 query_time = time.time() - query_start_time
-                
+
                 # Store result
                 results[analysis_name] = {
                     "data": query_result["data"],
                     "schema": query_result["schema"],
                     "rowCount": query_result["rowCount"],
                     "executionTime": query_time,
-                    "insights": insights
+                    "insights": insights,
                 }
-                
+
                 all_insights.extend(insights)
-        
+
         # Generate summary insights
         employee_count = df.count()
         department_count = df.select("department").distinct().count()
         avg_salary = df.agg({"salary": "avg"}).collect()[0][0]
-        
+
         summary_insights = [
             f"Dataset contains {employee_count} employees across {department_count} departments",
             f"Overall average salary is ${avg_salary:,.2f}",
-            f"Analysis completed in {time.time() - start_time:.2f} seconds"
+            f"Analysis completed in {time.time() - start_time:.2f} seconds",
         ]
-        
+
         execution_time = time.time() - start_time
-        
+
         # Prepare response data
         response_data = {
             "analysisType": analysis_type,
@@ -229,35 +243,38 @@ async def handler(input_data, context):
             "summary": {
                 "totalEmployees": employee_count,
                 "totalDepartments": department_count,
-                "overallAvgSalary": round(avg_salary, 2)
-            }
+                "overallAvgSalary": round(avg_salary, 2),
+            },
         }
-        
+
         metadata = {
             "csvPath": csv_path,
             "analysisType": analysis_type,
             "analysesRun": analyses_to_run,
             "sparkUrl": spark_url,
-            "appName": app_name
+            "appName": app_name,
         }
-        
+
         # Create success response
         response = create_step_response(
             success=True,
             data=response_data,
             execution_time=execution_time,
-            metadata=metadata
+            metadata=metadata,
         )
-        
+
         response["insights"] = all_insights + summary_insights
-        
-        context.logger.info("Employee analysis completed successfully", {
-            "executionTime": execution_time,
-            "analysesRun": len(analyses_to_run),
-            "totalInsights": len(response["insights"]),
-            "employeesAnalyzed": employee_count
-        })
-        
+
+        context.logger.info(
+            "Employee analysis completed successfully",
+            {
+                "executionTime": execution_time,
+                "analysesRun": len(analyses_to_run),
+                "totalInsights": len(response["insights"]),
+                "employeesAnalyzed": employee_count,
+            },
+        )
+
         # Emit completion event (optional - only if we need to chain to other steps)
         # await context.emit({
         #     "topic": "spark.analysis.completed",
@@ -268,18 +285,18 @@ async def handler(input_data, context):
         #         "executionTime": execution_time
         #     }
         # })
-        
+
         return response
-        
+
     except Exception as e:
         execution_time = time.time() - start_time
         error_response = handle_step_error(context, "spark.employees.analyze", e)
         error_response["executionTime"] = execution_time
         error_response["insights"] = []
-        
+
         # Emit error event (optional - only if we need to chain to other steps)
         # await context.emit({
-        #     "topic": "spark.analysis.completed", 
+        #     "topic": "spark.analysis.completed",
         #     "data": {
         #         "stepName": "spark.employees.analyze",
         #         "success": False,
@@ -287,14 +304,15 @@ async def handler(input_data, context):
         #         "executionTime": execution_time
         #     }
         # })
-        
+
         return error_response
-    
+
     finally:
         # Always cleanup Spark session
         if spark_util:
             try:
                 spark_util.stop_spark_session()
             except Exception as cleanup_error:
-                context.logger.warn("Error during Spark session cleanup", 
-                                   {"error": str(cleanup_error)})
+                context.logger.warn(
+                    "Error during Spark session cleanup", {"error": str(cleanup_error)}
+                )
