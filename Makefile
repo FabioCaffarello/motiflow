@@ -18,6 +18,7 @@ DOCKER_ENV = $(INFRA_DIR)/.env
 # Python optimization environment variables
 export PYTHONDONTWRITEBYTECODE = 1
 export PYTHONUNBUFFERED = 1
+
 export UV_NO_CACHE = 0
 
 # Colors for output
@@ -948,3 +949,143 @@ roadmap: check-roadmap ## 📋 Alias for check-roadmap
 unlock: unlock-roadmap ## 🔓 Alias for unlock-roadmap  
 lock: lock-roadmap ## 🔒 Alias for lock-roadmap
 roadmap-help: roadmap-workflow ## 📚 Alias for roadmap-workflow
+
+# AI Docs aliases
+ai-docs: check-ai-docs ## 📋 Alias for check-ai-docs
+encrypt-docs: encrypt-ai-docs ## 🔒 Alias for encrypt-ai-docs
+decrypt-docs: decrypt-ai-docs ## 🔓 Alias for decrypt-ai-docs
+ai-docs-help: ai-docs-workflow ## 📚 Alias for ai-docs-workflow
+
+# =============================================================================
+# AI Docs Security (GPG)
+# =============================================================================
+
+encrypt-ai-docs: ## 🔒 Encrypt ai_docs/ directory with GPG (requires passphrase)
+	@echo "$(YELLOW)🔒 Encrypting ai_docs/ directory with GPG...$(NC)"
+	@if [ ! -d "ai_docs" ]; then \
+		echo "$(RED)❌ ai_docs/ directory not found$(NC)"; \
+		echo "$(CYAN)💡 Use 'make decrypt-ai-docs' to decrypt first, or create the directory$(NC)"; \
+		exit 1; \
+	fi
+	@if command -v gpg >/dev/null 2>&1; then \
+		echo "$(BLUE)🔐 You will be prompted for a passphrase...$(NC)"; \
+		./ai_docs/internal/ENCRYPT_AI_DOCS.sh && \
+		echo "$(GREEN)✅ ai_docs/ encrypted successfully to ai_docs.tar.gz.gpg$(NC)" && \
+		echo "$(YELLOW)💡 Original directory preserved for local use$(NC)" && \
+		echo "$(CYAN)💡 The encrypted file (.gpg) can be safely committed to git$(NC)" && \
+		echo "$(CYAN)💡 Use 'make decrypt-ai-docs' to decrypt when needed$(NC)"; \
+	else \
+		echo "$(RED)❌ GPG not installed$(NC)"; \
+		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
+		exit 1; \
+	fi
+
+decrypt-ai-docs: ## 🔓 Decrypt ai_docs.tar.gz.gpg with GPG (requires passphrase)
+	@echo "$(YELLOW)🔓 Decrypting ai_docs.tar.gz.gpg with GPG...$(NC)"
+	@if [ ! -f "ai_docs.tar.gz.gpg" ]; then \
+		echo "$(RED)❌ ai_docs.tar.gz.gpg not found$(NC)"; \
+		echo "$(CYAN)💡 Use 'make encrypt-ai-docs' to create encrypted version$(NC)"; \
+		exit 1; \
+	fi
+	@if command -v gpg >/dev/null 2>&1; then \
+		echo "$(BLUE)🔐 You will be prompted for the passphrase...$(NC)"; \
+		(if [ -f "ai_docs/internal/DECRYPT_AI_DOCS.sh" ]; then \
+			./ai_docs/internal/DECRYPT_AI_DOCS.sh; \
+		else \
+			echo "$(YELLOW)⚠️  ai_docs/internal/ not found, decrypting directly...$(NC)" && \
+		gpg --decrypt --output ai_docs.tar.gz ai_docs.tar.gz.gpg && \
+		tar -xzf ai_docs.tar.gz && \
+		rm ai_docs.tar.gz && \
+		if [ -d "ai_docs/internal" ]; then \
+			chmod +x ai_docs/internal/*.sh 2>/dev/null || true && \
+			echo "$(GREEN)✅ Scripts permissions set$(NC)"; \
+		fi && \
+		if [ -f "ai_docs/internal/.gitmodules.template" ]; then \
+			cp ai_docs/internal/.gitmodules.template .gitmodules && \
+			echo "$(GREEN)✅ .gitmodules restored at repository root$(NC)"; \
+		fi && \
+		if [ -f ".gitmodules" ]; then \
+			echo "$(YELLOW)🔄 Initializing git submodules...$(NC)" && \
+			git submodule update --init --recursive 2>&1 | grep -v "fatal: No url found" || true && \
+			echo "$(GREEN)✅ Submodules initialized$(NC)" && \
+			echo "$(CYAN)💡 Note: Nested submodules in reference repos are ignored (expected)$(NC)"; \
+		fi; \
+		fi) && \
+		echo "$(GREEN)✅ ai_docs/ decrypted successfully$(NC)" && \
+		echo "$(YELLOW)⚠️  Remember: ai_docs/ is in .gitignore and won't be committed$(NC)" && \
+		echo "$(CYAN)💡 Make your changes, then use 'make encrypt-ai-docs' to update encrypted version$(NC)"; \
+	else \
+		echo "$(RED)❌ GPG not installed$(NC)"; \
+		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
+		exit 1; \
+	fi
+
+check-ai-docs: ## 🔍 Check ai_docs status (encrypted vs decrypted)
+	@echo "$(CYAN)🔍 AI Docs Status$(NC)"
+	@echo "=================="
+	@echo "$(BLUE)📁 Location: repository root$(NC)"
+	@echo ""
+	@if [ -d "ai_docs" ]; then \
+		echo "$(GREEN)✅ Decrypted version: ai_docs/$(NC)"; \
+		echo "   📊 Size: $$(du -sh ai_docs 2>/dev/null | cut -f1 || echo 'N/A')"; \
+		echo "   🔍 Git status: Not tracked (in .gitignore)"; \
+	else \
+		echo "$(YELLOW)⚠️  No decrypted version found$(NC)"; \
+		echo "   💡 Use 'make decrypt-ai-docs' to decrypt"; \
+	fi
+	@echo ""
+	@if [ -f "ai_docs.tar.gz.gpg" ]; then \
+		echo "$(GREEN)✅ Encrypted version: ai_docs.tar.gz.gpg$(NC)"; \
+		echo "   📊 Size: $$(du -h ai_docs.tar.gz.gpg | cut -f1)"; \
+		echo "   📅 Modified: $$(stat -f "%Sm" ai_docs.tar.gz.gpg 2>/dev/null || stat -c "%y" ai_docs.tar.gz.gpg 2>/dev/null | cut -d' ' -f1-2)"; \
+		echo "   🔍 Git status: Can be safely committed"; \
+	else \
+		echo "$(RED)❌ No encrypted version found$(NC)"; \
+		echo "   💡 Use 'make encrypt-ai-docs' to create encrypted version"; \
+	fi
+	@echo ""
+	@echo "$(BLUE)🔧 Available Commands:$(NC)"
+	@echo "   🔓 Decrypt:  make decrypt-ai-docs"
+	@echo "   🔒 Encrypt:  make encrypt-ai-docs"
+	@echo "   🔍 Status:   make check-ai-docs"
+	@echo ""
+	@echo "$(BLUE)🔐 Security Notes:$(NC)"
+	@echo "   • Encryption: AES256 symmetric encryption"
+	@echo "   • Passphrase: Interactive prompt (secure)"
+	@echo "   • Git: Only .gpg files are tracked"
+	@echo "   • .gitmodules: Restored from template after decryption"
+
+clean-ai-docs: ## 🧹 Remove decrypted ai_docs/ (keep encrypted version)
+	@echo "$(YELLOW)🧹 Removing decrypted ai_docs/ directory...$(NC)"
+	@if [ -d "ai_docs" ]; then \
+		rm -rf ai_docs && \
+		echo "$(GREEN)✅ Decrypted version removed$(NC)" && \
+		echo "$(CYAN)💡 Encrypted version preserved: ai_docs.tar.gz.gpg$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  No decrypted version found$(NC)"; \
+	fi
+
+ai-docs-workflow: ## 📋 Show ai_docs workflow guide
+	@echo "$(CYAN)📋 AI Docs Workflow Guide$(NC)"
+	@echo "=========================="
+	@echo ""
+	@echo "$(BLUE)🚀 Getting Started (New Machine):$(NC)"
+	@echo "1. git clone <repo>"
+	@echo "2. make decrypt-ai-docs    # Decrypt for use"
+	@echo "3. # Use ai_docs/ templates"
+	@echo "4. make encrypt-ai-docs    # Encrypt changes"
+	@echo "5. git add ai_docs.tar.gz.gpg"
+	@echo "6. git commit -m 'Update ai_docs'"
+	@echo ""
+	@echo "$(BLUE)🔄 Daily Workflow:$(NC)"
+	@echo "• Morning:   make decrypt-ai-docs"
+	@echo "• Work:      Use ai_docs/ templates"
+	@echo "• Evening:   make encrypt-ai-docs"
+	@echo "• Cleanup:   make clean-ai-docs (optional)"
+	@echo ""
+	@echo "$(BLUE)🔐 Security Benefits:$(NC)"
+	@echo "• Private templates in public repo"
+	@echo "• AES256 encryption"
+	@echo "• Personal passphrase protection"
+	@echo "• No sensitive info in git history"
+	@echo "• .gitmodules template encrypted (submodule URLs protected)"
