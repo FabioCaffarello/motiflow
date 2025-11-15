@@ -264,9 +264,21 @@ make unlock-roadmap     # 🔓 Decrypt docs/roadmap.md
 # Edit docs/roadmap.md
 make lock-roadmap       # 🔒 Encrypt to docs/roadmap.md.gpg
 make clean-roadmap      # 🧹 Remove decrypted version (optional)
+
+# AI Docs Management (Templates & Reference Repos)
+make ai-docs            # 📋 Check ai_docs status
+make decrypt-docs       # 🔓 Decrypt ai_docs/ for use
+make encrypt-docs       # 🔒 Encrypt ai_docs/ after changes
+make ai-docs-help       # 📚 Show complete workflow guide
+
+# Quick workflow
+make decrypt-ai-docs    # 🔓 Decrypt ai_docs.tar.gz.gpg
+# Use ai_docs/ templates
+make encrypt-ai-docs    # 🔒 Encrypt to ai_docs.tar.gz.gpg
+make clean-ai-docs      # 🧹 Remove decrypted version (optional)
 ```
 
-> 🔐 **Private Planning**: The roadmap uses AES256 encryption to keep personal development plans private while maintaining a public repository. Only encrypted `.gpg` files are tracked in git.
+> 🔐 **Private Planning**: Both roadmap and ai_docs use AES256 encryption to keep personal development plans and templates private while maintaining a public repository. Only encrypted `.gpg` files are tracked in git.
 
 ---
 
