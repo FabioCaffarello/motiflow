@@ -71,15 +71,72 @@ class SparkConnectUtil:
         infer_schema: bool = True,
         delimiter: str = ",",
     ) -> DataFrame:
-        """Load CSV file into Spark DataFrame"""
+        """
+        Load CSV file into Spark DataFrame
+        
+        Supports:
+        - Local paths: /path/to/file.csv
+        - S3A paths: s3a://bucket/path/to/file.csv (for MinIO/S3)
+        - HDFS paths: hdfs://path/to/file.csv
+        
+        For S3A paths, ensure Spark is configured with S3A credentials.
+        """
         spark = self.get_spark_session()
 
-        return (
-            spark.read.option("header", str(header).lower())
-            .option("inferSchema", str(infer_schema).lower())
-            .option("delimiter", delimiter)
-            .csv(csv_path)
-        )
+        # Validate and log path type
+        if csv_path.startswith("s3a://"):
+            # S3A path - validate format
+            path_parts = csv_path.split("/")
+            if len(path_parts) < 4:
+                raise ValueError(
+                    f"Invalid S3A path format: {csv_path}. Expected format: s3a://bucket/key/path/to/file.csv"
+                )
+            bucket = csv_path.split("/")[2]
+            key = "/".join(csv_path.split("/")[3:])
+            logging.info(
+                f"Loading CSV from S3A: bucket={bucket}, key={key[:100]}..."
+                if len(key) > 100
+                else f"Loading CSV from S3A: bucket={bucket}, key={key}"
+            )
+        elif csv_path.startswith("s3://"):
+            # Convert s3:// to s3a:// for compatibility
+            csv_path = csv_path.replace("s3://", "s3a://", 1)
+            logging.warning(
+                f"Converted s3:// to s3a:// path: {csv_path}"
+            )
+        else:
+            logging.info(f"Loading CSV from local path: {csv_path}")
+
+        try:
+            df = (
+                spark.read.option("header", str(header).lower())
+                .option("inferSchema", str(infer_schema).lower())
+                .option("delimiter", delimiter)
+                .csv(csv_path)
+            )
+            
+            # Log successful load
+            if csv_path.startswith("s3a://"):
+                logging.info(f"Successfully loaded CSV from S3A: {csv_path}")
+            else:
+                logging.info(f"Successfully loaded CSV from local path: {csv_path}")
+            
+            return df
+        except Exception as e:
+            error_msg = str(e)
+            if "s3a" in csv_path.lower() or "s3" in csv_path.lower():
+                raise Exception(
+                    f"Failed to load CSV from S3A path {csv_path}. "
+                    f"Ensure: 1) Spark is configured with S3A credentials, "
+                    f"2) The file exists in MinIO/S3, 3) The path is correct. "
+                    f"Original error: {error_msg}"
+                )
+            else:
+                raise Exception(
+                    f"Failed to load CSV from {csv_path}. "
+                    f"Ensure the file exists and is accessible. "
+                    f"Original error: {error_msg}"
+                )
 
     def df_to_dict(self, df: DataFrame, max_rows: int = 1000) -> Dict[str, Any]:
         """Convert Spark DataFrame to dictionary for JSON serialization"""
