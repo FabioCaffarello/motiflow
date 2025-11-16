@@ -238,7 +238,7 @@ impl DataGenerationService {
     /// Calculate optimal batch size for generation
     fn calculate_optimal_batch_size(total_rows: usize) -> usize {
         // Simple heuristic - in practice this would consider memory, CPU, etc.
-        std::cmp::min(1000, std::cmp::max(100, total_rows / 10))
+        (total_rows / 10).clamp(100, 1000)
     }
 }
 
@@ -308,16 +308,17 @@ impl QualityAnalysisService {
             Vec::new()
         };
         
+        // Create context from dataset schema (needed for Small schemas)
+        let ctx = GenerationContext::from_schema(&dataset.schema);
+        
         let mut unique_values = HashSet::new();
         let mut type_violations = 0;
-        let mut total_non_null = 0;
         
         for row in &dataset.rows {
-            if let Some(value) = row.get_field(&field_def.name) {
+            if let Some(value) = row.get_field_value(&field_def.name, Some(&ctx)) {
                 if value.is_null() {
                     analysis.null_count += 1;
                 } else {
-                    total_non_null += 1;
                     // Only clone if needed for constraint validation
                     if needs_constraint_validation {
                         values.push(value.clone());
@@ -412,6 +413,9 @@ impl QualityAnalysisService {
         dataset: &DataSet, 
         field_names: &[String]
     ) -> Result<Vec<ConstraintViolation>> {
+        // Create context from dataset schema (needed for Small schemas)
+        let ctx = GenerationContext::from_schema(&dataset.schema);
+        
         let mut violations = Vec::new();
         let mut seen_combinations = HashSet::new();
         
@@ -419,7 +423,7 @@ impl QualityAnalysisService {
             let mut combination = Vec::new();
             
             for field_name in field_names {
-                if let Some(value) = row.get_field(field_name) {
+                if let Some(value) = row.get_field_value(field_name, Some(&ctx)) {
                     combination.push(value.clone());
                 } else {
                     combination.push(DataValue::Null);
@@ -690,10 +694,13 @@ mod tests {
         
         let mut dataset = DataSet::new("test".to_string(), schema);
         
+        // Create context for set_field
+        let ctx = GenerationContext::from_schema(&dataset.schema);
+        
         // Add some valid rows
         for i in 1..=5 {
             let mut row = DataRow::new();
-            row.set_field("id".to_string(), DataValue::Integer(i));
+            row.set_field("id".to_string(), DataValue::Integer(i), Some(&ctx));
             dataset.add_row(row).unwrap();
         }
         
