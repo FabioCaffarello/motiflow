@@ -18,7 +18,7 @@ use super::string::StringGenerator;
 /// # Example
 ///
 /// ```rust
-/// use synthetic_data_infrastructure::capabilities::generators::DefaultDataGenerator;
+/// use synthetic_data_infrastructure::capabilities::generators::{DefaultDataGenerator, string::StringGenerator};
 /// use synthetic_data_core::ports::*;
 /// use std::sync::Arc;
 ///
@@ -207,8 +207,8 @@ impl DataGeneratorPort for DefaultDataGenerator {
         // The transpose operation cost more than the clones it eliminated
         // Keeping original structure and cloning (clone is optimized for small values)
         // 
-        // NEW OPTIMIZATION: Use unsafe unchecked access for maximum performance
-        // We know indices are valid, so we can skip bounds checking
+        // OPTIMIZATION: Using safe indexing - compiler optimizes bounds checks away when bounds are guaranteed
+        // All indices are mathematically guaranteed to be valid (field_idx < field_count, i < count)
         let rows: Vec<DataRow> = if use_vec {
             // MAXIMUM PERFORMANCE: Pre-allocate Vec with None, then fill directly by index!
             // O(1) access - NO linear search, NO String clones!
@@ -221,47 +221,47 @@ impl DataGeneratorPort for DefaultDataGenerator {
                     let mut fields_vec = vec![None; field_count];
                     
                     // Fill directly by index - O(1) assignment per field!
-                    // ULTRA-OPTIMIZED: Use unsafe unchecked access + unrolled loop for small field counts
-                    // We know field_idx < field_count and i < count, so bounds are safe
+                    // OPTIMIZED: Using safe indexing with loop unrolling for small field counts
+                    // Compiler optimizes bounds checks away (field_idx < field_count and i < count are guaranteed)
                     // CRITICAL: Custom Clone implementation is optimized for hot paths
                     // For DataValue::String (most common), String::clone() uses memcpy (very fast)
                     // For copy types (Integer, Float, Boolean), uses direct copy (extremely fast)
                     
                     // OPTIMIZATION: Unroll loop for very small schemas (1-4 fields) for better performance
                     // This eliminates loop overhead and improves branch prediction
-                    unsafe {
-                        match field_count {
-                            1 => {
-                                *fields_vec.get_unchecked_mut(0) = Some(field_values.get_unchecked(0).get_unchecked(i).clone());
-                            }
-                            2 => {
-                                *fields_vec.get_unchecked_mut(0) = Some(field_values.get_unchecked(0).get_unchecked(i).clone());
-                                *fields_vec.get_unchecked_mut(1) = Some(field_values.get_unchecked(1).get_unchecked(i).clone());
-                            }
-                            3 => {
-                                *fields_vec.get_unchecked_mut(0) = Some(field_values.get_unchecked(0).get_unchecked(i).clone());
-                                *fields_vec.get_unchecked_mut(1) = Some(field_values.get_unchecked(1).get_unchecked(i).clone());
-                                *fields_vec.get_unchecked_mut(2) = Some(field_values.get_unchecked(2).get_unchecked(i).clone());
-                            }
-                            4 => {
-                                *fields_vec.get_unchecked_mut(0) = Some(field_values.get_unchecked(0).get_unchecked(i).clone());
-                                *fields_vec.get_unchecked_mut(1) = Some(field_values.get_unchecked(1).get_unchecked(i).clone());
-                                *fields_vec.get_unchecked_mut(2) = Some(field_values.get_unchecked(2).get_unchecked(i).clone());
-                                *fields_vec.get_unchecked_mut(3) = Some(field_values.get_unchecked(3).get_unchecked(i).clone());
-                            }
-                            _ => {
-                                // For larger schemas, use loop (still optimized with unchecked access)
-                                for field_idx in 0..field_count {
-                                    *fields_vec.get_unchecked_mut(field_idx) = Some(field_values.get_unchecked(field_idx).get_unchecked(i).clone());
-                                }
+                    // SAFE: Using regular indexing - compiler optimizes bounds checks away when bounds are guaranteed
+                    match field_count {
+                        1 => {
+                            fields_vec[0] = Some(field_values[0][i].clone());
+                        }
+                        2 => {
+                            fields_vec[0] = Some(field_values[0][i].clone());
+                            fields_vec[1] = Some(field_values[1][i].clone());
+                        }
+                        3 => {
+                            fields_vec[0] = Some(field_values[0][i].clone());
+                            fields_vec[1] = Some(field_values[1][i].clone());
+                            fields_vec[2] = Some(field_values[2][i].clone());
+                        }
+                        4 => {
+                            fields_vec[0] = Some(field_values[0][i].clone());
+                            fields_vec[1] = Some(field_values[1][i].clone());
+                            fields_vec[2] = Some(field_values[2][i].clone());
+                            fields_vec[3] = Some(field_values[3][i].clone());
+                        }
+                        _ => {
+                            // For larger schemas, use loop
+                            // SAFE: Bounds are guaranteed (field_idx < field_count, i < count)
+                            for field_idx in 0..field_count {
+                                fields_vec[field_idx] = Some(field_values[field_idx][i].clone());
                             }
                         }
                     }
                     
                     // CRITICAL: No Arc cloning! Context is shared (zero atomic operations!)
-                    // ULTRA-OPTIMIZED: Use unchecked access for UUID (bounds guaranteed)
+                    // SAFE: Using regular indexing - compiler optimizes bounds checks away (i < count is guaranteed)
                     DataRow {
-                        id: unsafe { *uuids.get_unchecked(i) },
+                        id: uuids[i],
                         fields: Fields::Small(fields_vec),
                         sequence: i as u64,
                         generated_at: now,
@@ -289,9 +289,9 @@ impl DataGeneratorPort for DefaultDataGenerator {
                     }
                     
                     // CRITICAL: No Arc cloning! Context is shared (zero atomic operations!)
-                    // ULTRA-OPTIMIZED: Use unchecked access for UUID (bounds guaranteed)
+                    // SAFE: Using regular indexing - compiler optimizes bounds checks away (i < count is guaranteed)
                     DataRow {
-                        id: unsafe { *uuids.get_unchecked(i) },
+                        id: uuids[i],
                         fields: Fields::Large(fields),
                         sequence: i as u64,
                         generated_at: now,
@@ -307,7 +307,7 @@ impl DataGeneratorPort for DefaultDataGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use synthetic_data_core::domain::builders::*;
+    use synthetic_data_core::domain::builders::{DataSchemaBuilder, FieldDefinitionBuilder};
     
     #[tokio::test]
     async fn test_generate_value_string() {

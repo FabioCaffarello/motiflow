@@ -44,8 +44,15 @@ impl SchemaValidationService {
     /// use synthetic_data_core::*;
     ///
     /// let mut schema = DataSchema::new("users".to_string(), "1.0".to_string());
-    /// // ... add fields ...
-    /// SchemaValidationService::validate_schema(&schema)?;
+    /// schema.fields.push(FieldDefinition {
+    ///     name: "id".to_string(),
+    ///     field_type: FieldType::Integer { min: None, max: None },
+    ///     constraints: vec![],
+    ///     required: true,
+    ///     default: None,
+    ///     description: None,
+    /// });
+    /// SchemaValidationService::validate_schema(&schema).unwrap();
     /// ```
     pub fn validate_schema(schema: &DataSchema) -> Result<()> {
         // Basic schema validation

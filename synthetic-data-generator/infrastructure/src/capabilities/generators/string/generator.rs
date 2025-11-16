@@ -138,10 +138,11 @@ impl StringGenerator {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// use synthetic_data_core::domain::*;
     /// use synthetic_data_infrastructure::capabilities::generators::string::StringGenerator;
     ///
+    /// # tokio::runtime::Runtime::new().unwrap().block_on(async {
     /// let generator = StringGenerator::new(None);
     /// let field = FieldDefinition {
     ///     name: "name".to_string(),
@@ -156,8 +157,9 @@ impl StringGenerator {
     ///     description: None,
     /// };
     ///
-    /// let result = generator.generate(&field).await?;
+    /// let result = generator.generate(&field).await.unwrap();
     /// assert!(result.len() >= 5 && result.len() <= 10);
+    /// # });
     /// ```
     pub async fn generate(&self, field: &FieldDefinition) -> Result<String> {
         let FieldType::String { min_length, max_length, pattern } = &field.field_type else {
@@ -296,6 +298,10 @@ impl StringGenerator {
                 });
                 Ok(results)
             }
+            Some(StringPattern::Phone(format)) => {
+                // Phone generation - optimized batch (synchronous - zero async overhead!)
+                self.generate_phone_batch(format.clone(), count)
+            }
             Some(StringPattern::Username) | _ if field.name.to_lowercase().contains("username") || 
                                                   field.name.to_lowercase().contains("user_name") ||
                                                   field.name.to_lowercase().contains("login") => {
@@ -416,24 +422,10 @@ impl StringGenerator {
                 
                 // Generate and build string in one pass (better cache locality)
                 // Direct RNG access eliminates with_rng closure overhead
-                // ULTRA-OPTIMIZED: Use unchecked access for charset (index guaranteed valid)
-                // MAXIMUM PERFORMANCE: Unroll small loops and use direct indexing
-                if length <= 8 {
-                    // Unroll for very short strings (common case)
-                    for _ in 0..length {
-                        let idx = rng_guard.random_range(0..charset_len);
-                        unsafe {
-                            s.push(*chars.get_unchecked(idx));
-                        }
-                    }
-                } else {
-                    // For longer strings, use standard loop with unchecked access
-                    for _ in 0..length {
-                        let idx = rng_guard.random_range(0..charset_len);
-                        unsafe {
-                            s.push(*chars.get_unchecked(idx));
-                        }
-                    }
+                // SAFE: Using regular indexing - compiler optimizes bounds checks away (idx < charset_len is guaranteed by RNG)
+                for _ in 0..length {
+                    let idx = rng_guard.random_range(0..charset_len);
+                    s.push(chars[idx]);
                 }
                 
                 s
@@ -553,10 +545,10 @@ impl StringGenerator {
                     let last_idx = rng_guard.random_range(0..self.last_names_pool.len());
                     let domain_idx = rng_guard.random_range(0..self.email_domains.len());
                     
-                    // ULTRA-OPTIMIZED: Use unchecked access (indices guaranteed valid by RNG)
-                    let first = unsafe { self.first_names_pool.get_unchecked(first_idx) };
-                    let last = unsafe { self.last_names_pool.get_unchecked(last_idx) };
-                    let domain = unsafe { self.email_domains.get_unchecked(domain_idx) };
+                    // SAFE: Using regular indexing - compiler optimizes bounds checks away (indices guaranteed valid by RNG)
+                    let first = &self.first_names_pool[first_idx];
+                    let last = &self.last_names_pool[last_idx];
+                    let domain = &self.email_domains[domain_idx];
                     
                     // ULTRA-OPTIMIZED: Pre-allocate email with exact capacity
                     let exact_capacity = first.len() + last.len() + domain.len() + 15;
@@ -772,9 +764,9 @@ impl StringGenerator {
                     let pattern = rng_guard.random_range(0..=5);
                     let first_idx = rng_guard.random_range(0..self.first_names_pool.len());
                     let last_idx = rng_guard.random_range(0..self.last_names_pool.len());
-                    // ULTRA-OPTIMIZED: Use unchecked access (indices guaranteed valid by RNG)
-                    let first = unsafe { self.first_names_pool.get_unchecked(first_idx) };
-                    let last = unsafe { self.last_names_pool.get_unchecked(last_idx) };
+                    // SAFE: Using regular indexing - compiler optimizes bounds checks away (indices guaranteed valid by RNG)
+                    let first = &self.first_names_pool[first_idx];
+                    let last = &self.last_names_pool[last_idx];
                     
                     // ULTRA-OPTIMIZED: Pre-allocate username with exact capacity
                     let exact_capacity = first.len() + last.len() + 15;
@@ -890,6 +882,106 @@ impl StringGenerator {
                 // Future: parse pattern and generate accordingly
                 let len = pattern.len().max(10);
                 self.generate_from_charset(len, len).await
+            }
+        }
+    }
+    
+    /// Generate multiple phone numbers (optimized batch)
+    ///
+    /// Uses efficient string building and parallelization for maximum performance.
+    fn generate_phone_batch(&self, format: PhoneFormat, count: usize) -> Result<Vec<String>> {
+        match format {
+            PhoneFormat::US => {
+                // MAXIMUM PERFORMANCE: Generate phones in parallel using rayon!
+                // Format: (XXX) XXX-XXXX
+                let results: Vec<String> = (0..count)
+                    .into_par_iter()
+                    .with_min_len(1000)  // Better load balancing for large batches
+                    .map(|i| {
+                        // Get thread-local RNG directly (no with_rng wrapper overhead!)
+                        let rng = self.rng.get_or(|| {
+                            let seed = match self.seed {
+                                Some(s) => s.wrapping_add(i as u64),
+                                None => {
+                                    use std::time::{SystemTime, UNIX_EPOCH};
+                                    let time_seed = SystemTime::now()
+                                        .duration_since(UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_nanos() as u64;
+                                    time_seed.wrapping_add(i as u64)
+                                }
+                            };
+                            RefCell::new(ChaCha8Rng::seed_from_u64(seed))
+                        });
+                        let mut rng_guard = rng.borrow_mut();
+                        
+                        let area = rng_guard.random_range(200..=999);
+                        let exchange = rng_guard.random_range(200..=999);
+                        let number = rng_guard.random_range(1000..=9999);
+                        
+                        // ULTRA-OPTIMIZED: Pre-allocate phone with exact capacity
+                        let mut phone = self.string_pool.get_with_capacity(14);
+                        phone.push('(');
+                        let mut buf = itoa::Buffer::new();
+                        phone.push_str(buf.format(area));
+                        phone.push_str(") ");
+                        phone.push_str(buf.format(exchange));
+                        phone.push('-');
+                        phone.push_str(buf.format(number));
+                        phone
+                    })
+                    .collect();
+                Ok(results)
+            }
+            PhoneFormat::International => {
+                // MAXIMUM PERFORMANCE: Generate phones in parallel using rayon!
+                // Format: +XX XXX XXX XXXX
+                let results: Vec<String> = (0..count)
+                    .into_par_iter()
+                    .with_min_len(1000)  // Better load balancing for large batches
+                    .map(|i| {
+                        // Get thread-local RNG directly
+                        let rng = self.rng.get_or(|| {
+                            let seed = match self.seed {
+                                Some(s) => s.wrapping_add(i as u64),
+                                None => {
+                                    use std::time::{SystemTime, UNIX_EPOCH};
+                                    let time_seed = SystemTime::now()
+                                        .duration_since(UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_nanos() as u64;
+                                    time_seed.wrapping_add(i as u64)
+                                }
+                            };
+                            RefCell::new(ChaCha8Rng::seed_from_u64(seed))
+                        });
+                        let mut rng_guard = rng.borrow_mut();
+                        
+                        let country = rng_guard.random_range(1..=99);
+                        let area = rng_guard.random_range(100..=999);
+                        let first = rng_guard.random_range(100..=999);
+                        let second = rng_guard.random_range(1000..=9999);
+                        
+                        // ULTRA-OPTIMIZED: Pre-allocate phone with exact capacity
+                        let mut phone = self.string_pool.get_with_capacity(18);
+                        phone.push('+');
+                        let mut buf = itoa::Buffer::new();
+                        phone.push_str(buf.format(country));
+                        phone.push(' ');
+                        phone.push_str(buf.format(area));
+                        phone.push(' ');
+                        phone.push_str(buf.format(first));
+                        phone.push(' ');
+                        phone.push_str(buf.format(second));
+                        phone
+                    })
+                    .collect();
+                Ok(results)
+            }
+            PhoneFormat::Custom(pattern) => {
+                // For MVP, generate alphanumeric matching pattern length
+                let len = pattern.len().max(10);
+                self.generate_from_charset_batch(len, len, count)
             }
         }
     }

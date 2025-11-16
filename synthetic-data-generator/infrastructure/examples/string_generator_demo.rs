@@ -242,11 +242,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Gerar algumas linhas
     println!("  Gerando 5 linhas:");
+    // Create context from schema (needed for Small schemas)
+    let ctx = GenerationContext::from_schema(&schema);
     for i in 1..=5 {
         let row = data_gen.generate_row(&schema).await?;
         println!("  Linha {}:", i);
         for field_name in ["username", "email", "full_name"] {
-            if let Some(value) = row.get_field_value(field_name) {
+            if let Some(value) = row.get_field_value(field_name, Some(&ctx)) {
                 println!("    {}: {:?}", field_name, value);
             }
         }

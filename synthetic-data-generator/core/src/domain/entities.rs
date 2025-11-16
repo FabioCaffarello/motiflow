@@ -736,7 +736,8 @@ pub mod builders {
     ///             .add_constraint(FieldConstraint::Unique)
     ///             .build()
     ///     )
-    ///     .build()?;
+    ///     .build()
+    ///     .unwrap();
     /// ```
     pub struct DataSchemaBuilder {
         name: String,
