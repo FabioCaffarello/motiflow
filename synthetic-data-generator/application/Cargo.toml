@@ -7,7 +7,6 @@ description = "Application layer with CLI, API, and orchestration components"
 
 [dependencies]
 synthetic_data_core = { path = "../core" }
-synthetic_data_infrastructure = { path = "../infrastructure" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
