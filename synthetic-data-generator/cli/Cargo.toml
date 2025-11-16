@@ -1,0 +1,19 @@
+[package]
+name = "synthetic-data-generator"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Team <team@company.com>"]
+description = "Command-line interface for synthetic data generator"
+
+[[bin]]
+name = "syngen"
+path = "src/main.rs"
+
+[dependencies]
+synthetic_data_core = { path = "../core" }
+synthetic_data_infrastructure = { path = "../infrastructure" }
+synthetic_data_application = { path = "../application" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

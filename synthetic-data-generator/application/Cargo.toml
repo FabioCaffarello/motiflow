@@ -1,0 +1,22 @@
+[package]
+name = "synthetic_data_application"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Team <team@company.com>"]
+description = "Application layer with CLI, API, and orchestration components"
+
+[dependencies]
+synthetic_data_core = { path = "../core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { version = "4.4", features = ["derive"] }
+console = "0.16.1"
+indicatif = "0.18.3"
+
+[dev-dependencies]
+criterion = { workspace = true }
+tempfile = "3.8"

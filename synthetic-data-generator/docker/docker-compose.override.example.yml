@@ -1,0 +1,57 @@
+# Docker Compose override file for local development
+# This file is automatically loaded by docker-compose and overrides settings in docker-compose.yml
+# Copy this to docker-compose.override.yml and customize as needed
+
+version: '3.8'
+
+services:
+  dev:
+    # Override for development with custom settings
+    environment:
+      - RUST_LOG=trace  # More verbose logging
+      - CARGO_INCREMENTAL=1
+      - RUST_BACKTRACE=full
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+      - "5005:5005"  # Debug port
+    volumes:
+      # Add additional volume mounts for local development
+      - ~/.gitconfig:/home/dev/.gitconfig:ro
+      - ~/.ssh:/home/dev/.ssh:ro
+    command: ["bash", "-c", "cargo watch -x 'run --bin syngen'"]
+
+  prod-test:
+    # Override for production testing
+    environment:
+      - RUST_LOG=info
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # Local Redis for caching (if needed in future)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    profiles:
+      - cache
+
+  # Local monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    profiles:
+      - monitoring
+
+volumes:
+  redis-data:
+    driver: local

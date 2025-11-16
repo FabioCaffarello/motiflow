@@ -1,0 +1,39 @@
+[package]
+name = "synthetic_data_infrastructure"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Team <team@company.com>"]
+description = "Infrastructure layer with generators, memory management, and external adapters"
+
+[dependencies]
+synthetic_data_core = { path = "../core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+unicode-segmentation = "1.11"
+async-trait = "0.1"
+thread_local = "1.1"
+fake = { version = "2", features = ["derive"] }
+futures = "0.3"
+rayon = { workspace = true }
+crossbeam = { workspace = true }
+parking_lot = { workspace = true }
+libc = { workspace = true }
+memmap2 = { workspace = true }
+itoa = "1.0"
+rustc-hash = "1.1"
+num_cpus = "1.0"
+
+[dev-dependencies]
+criterion = { workspace = true }
+quickcheck = { workspace = true }
+quickcheck_macros = { workspace = true }
+tempfile = "3.8"
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
