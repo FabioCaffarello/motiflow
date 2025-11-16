@@ -4,7 +4,25 @@ import { z } from "zod";
 // Define request body schema
 const requestBodySchema = z.object({
   type: z.enum(["employees", "sales", "generic", "sql"]),
-  csvPath: z.string().min(1, "CSV path is required"),
+  csvPath: z
+    .string()
+    .min(1, "CSV path is required")
+    .refine(
+      (path) => {
+        // Validate path format - accept local paths, S3A paths, or HDFS paths
+        return (
+          path.startsWith("s3a://") ||
+          path.startsWith("s3://") ||
+          path.startsWith("hdfs://") ||
+          path.startsWith("/") ||
+          path.match(/^[a-zA-Z]:\\/) // Windows paths
+        );
+      },
+      {
+        message:
+          "CSV path must be a valid path: s3a://bucket/key, s3://bucket/key, hdfs://path, or local path",
+      }
+    ),
   analysisType: z.string().optional(),
   sqlQuery: z.string().optional(), // Required only for 'sql' type
   sparkUrl: z.string().default("sc://spark-connect:15002"),
@@ -60,9 +78,20 @@ export const handler: Handlers["spark-analyze"] = async (req, ctx) => {
       };
     }
 
+    // Normalize S3 paths to S3A
+    let normalizedCsvPath = requestData.csvPath;
+    if (normalizedCsvPath.startsWith("s3://")) {
+      normalizedCsvPath = normalizedCsvPath.replace("s3://", "s3a://");
+      logger.info("Converted s3:// to s3a:// path", {
+        original: requestData.csvPath,
+        normalized: normalizedCsvPath,
+      });
+    }
+
     logger.info("Received Spark analysis request", {
       type: requestData.type,
-      csvPath: requestData.csvPath,
+      csvPath: normalizedCsvPath,
+      isS3A: normalizedCsvPath.startsWith("s3a://"),
     });
 
     // Generate unique analysis ID
@@ -76,7 +105,7 @@ export const handler: Handlers["spark-analyze"] = async (req, ctx) => {
           data: {
             analysisType:
               (requestData.analysisType as any) || "salary_by_department",
-            csvPath: requestData.csvPath,
+            csvPath: normalizedCsvPath,
             sparkUrl: requestData.sparkUrl,
             appName:
               requestData.appName || `motia-employee-analyzer-${analysisId}`,
@@ -90,7 +119,7 @@ export const handler: Handlers["spark-analyze"] = async (req, ctx) => {
           data: {
             analysisType:
               (requestData.analysisType as any) || "revenue_by_region",
-            csvPath: requestData.csvPath,
+            csvPath: normalizedCsvPath,
             sparkUrl: requestData.sparkUrl,
             appName:
               requestData.appName || `motia-sales-analyzer-${analysisId}`,
@@ -102,7 +131,7 @@ export const handler: Handlers["spark-analyze"] = async (req, ctx) => {
         await emit({
           topic: "spark.generic.analyze",
           data: {
-            csvPath: requestData.csvPath,
+            csvPath: normalizedCsvPath,
             analysisType: (requestData.analysisType as any) || "profile",
             sparkUrl: requestData.sparkUrl,
             appName:
@@ -116,7 +145,7 @@ export const handler: Handlers["spark-analyze"] = async (req, ctx) => {
         await emit({
           topic: "spark.sql.execute",
           data: {
-            csvPath: requestData.csvPath,
+            csvPath: normalizedCsvPath,
             sqlQuery: requestData.sqlQuery!,
             sparkUrl: requestData.sparkUrl,
             appName: requestData.appName || `motia-sql-executor-${analysisId}`,

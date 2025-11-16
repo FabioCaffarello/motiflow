@@ -65,8 +65,23 @@ async def handler(input_data, context):
         spark_util = SparkConnectUtil(spark_url=spark_url, app_name=app_name)
 
         # Load CSV file
-        context.logger.info("Loading CSV file", {"csvPath": csv_path})
+        context.logger.info(
+            "Loading CSV file",
+            {
+                "csvPath": csv_path,
+                "isS3A": csv_path.startswith("s3a://"),
+                "source": "MinIO/S3" if csv_path.startswith("s3a://") else "local",
+            },
+        )
         df = spark_util.load_csv(csv_path)
+        context.logger.info(
+            "CSV file loaded successfully",
+            {
+                "rowCount": df.count(),
+                "columnCount": len(df.columns),
+                "columns": df.columns,
+            },
+        )
 
         # Execute SQL query
         context.logger.info(

@@ -40,6 +40,9 @@ import { useRef, useState } from "react";
 export default function Home() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [useWebSearch, setUseWebSearch] = useState(false);
+  const [uploadedCSVs, setUploadedCSVs] = useState<
+    Array<{ filename: string; s3aPath: string }>
+  >([]);
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -104,11 +107,33 @@ export default function Home() {
 
           // Store uploaded file info for the chat message
           if (json.uploadedFiles && json.uploadedFiles.length > 0) {
-            // You can use this data to include MinIO URLs in the chat message later
-            console.log(
-              "📁 Files stored in MinIO:",
-              json.uploadedFiles.map((f: { url: string }) => f.url),
+            const csvFiles = json.uploadedFiles.filter(
+              (f: { fileType?: { isCSV?: boolean } }) => f.fileType?.isCSV,
             );
+
+            if (csvFiles.length > 0) {
+              // Store CSV info for later use in chat
+              const csvInfo = csvFiles.map(
+                (f: {
+                  originalName: string;
+                  s3aPath?: string;
+                  sparkAnalysis?: any;
+                }) => ({
+                  filename: f.originalName,
+                  s3aPath: f.s3aPath || "",
+                }),
+              );
+              setUploadedCSVs((prev) => [...prev, ...csvInfo]);
+
+              console.log(
+                "📊 CSV files uploaded and Spark analysis triggered:",
+                csvFiles.map((f: { originalName: string; sparkAnalysis?: any }) => ({
+                  name: f.originalName,
+                  analysisId: f.sparkAnalysis?.analysisId,
+                  s3aPath: (f as any).s3aPath,
+                })),
+              );
+            }
           }
         }
       } catch (err) {
@@ -116,16 +141,39 @@ export default function Home() {
       }
     }
 
-    const fileInfo = hasAttachments
-      ? `\n\n📎 Uploaded ${message.files?.length} file(s): ${message.files
-          ?.map((f) => f.filename || "unknown")
-          .join(", ")}`
-      : "";
+    // Build file info message with CSV-specific information
+    let fileInfo = "";
+    let csvContext = "";
+
+    if (hasAttachments) {
+      const fileNames = message.files
+        ?.map((f) => f.filename || "unknown")
+        .join(", ");
+      fileInfo = `\n\n📎 Uploaded ${message.files?.length} file(s): ${fileNames}`;
+
+      // Check if any files are CSVs and add Spark processing info
+      const csvFiles = message.files?.filter(
+        (f) => f.filename?.toLowerCase().endsWith(".csv"),
+      );
+      if (csvFiles && csvFiles.length > 0) {
+        fileInfo += `\n\n📊 CSV file(s) detected! These files are being processed with Spark Connect.`;
+        fileInfo += `\nYou can ask me to analyze the data or run SQL queries on them.`;
+        fileInfo += `\nExample: "Show me the first 10 rows" or "SELECT * FROM data LIMIT 10"`;
+
+        // Add CSV context with S3A paths for the AI to use
+        const recentCSVs = uploadedCSVs.slice(-csvFiles.length);
+        if (recentCSVs.length > 0) {
+          csvContext = `\n\nAvailable CSV files for analysis:\n${recentCSVs
+            .map((csv) => `- ${csv.filename}: ${csv.s3aPath}`)
+            .join("\n")}`;
+        }
+      }
+    }
 
     const messageText = message.text
-      ? `${message.text}${fileInfo}`
+      ? `${message.text}${fileInfo}${csvContext}`
       : hasAttachments
-        ? `Sent with attachments${fileInfo}`
+        ? `Sent with attachments${fileInfo}${csvContext}`
         : "";
 
     await sendMessage(
