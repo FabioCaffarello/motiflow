@@ -1,0 +1,19 @@
+[package]
+name = "synthetic_data_core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Team <team@company.com>"]
+description = "Domain and application layer for synthetic data generator"
+
+[dependencies]
+serde = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+criterion = { workspace = true }
+proptest = { workspace = true }

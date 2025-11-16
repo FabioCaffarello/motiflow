@@ -1,0 +1,96 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+# Cargo.lock - commented out to include in Docker builds
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and README files
+README.md
+docs/
+*.md
+!docker/README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env*
+!.env.example
+
+# Development tools
+docker/
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Test artifacts
+/coverage/
+/benches/results/
+.coverage/
+
+# Node modules (if any)
+node_modules/
+
+# Python artifacts (if any)  
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Security and secrets
+*.key
+*.pem
+*.crt
+.secrets/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Compressed files
+*.tar.gz
+*.zip
+*.rar
+
+# Local development overrides
+docker-compose.override.yml
+.env.local
