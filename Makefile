@@ -952,108 +952,120 @@ roadmap-help: roadmap-workflow ## 📚 Alias for roadmap-workflow
 
 # AI Docs aliases
 ai-docs: check-ai-docs ## 📋 Alias for check-ai-docs
-encrypt-docs: encrypt-ai-docs ## 🔒 Alias for encrypt-ai-docs
-decrypt-docs: decrypt-ai-docs ## 🔓 Alias for decrypt-ai-docs
+encrypt-docs: encrypt-ai-docs ## 🔒 Alias for encrypt-ai-docs (root layer)
+decrypt-docs: decrypt-ai-docs ## 🔓 Alias for decrypt-ai-docs (root layer)
+encrypt-all: encrypt-all-docs ## 🔒 Alias for encrypt-all-docs (both layers)
+decrypt-all: decrypt-all-docs ## 🔓 Alias for decrypt-all-docs (both layers)
 ai-docs-help: ai-docs-workflow ## 📚 Alias for ai-docs-workflow
 
 # =============================================================================
 # AI Docs Security (GPG)
 # =============================================================================
 
-encrypt-ai-docs: ## 🔒 Encrypt ai_docs/ directory with GPG (requires passphrase)
-	@echo "$(YELLOW)🔒 Encrypting ai_docs/ directory with GPG...$(NC)"
+encrypt-ai-docs: ## 🔒 Encrypt ai_docs/ directory (root layer, excludes refs/)
+	@echo "$(YELLOW)🔒 Encrypting ai_docs/ directory (root layer)...$(NC)"
 	@if [ ! -d "ai_docs" ]; then \
 		echo "$(RED)❌ ai_docs/ directory not found$(NC)"; \
-		echo "$(CYAN)💡 Use 'make decrypt-ai-docs' to decrypt first, or create the directory$(NC)"; \
+		echo "$(CYAN)💡 Use 'make decrypt-ai-docs' to decrypt first$(NC)"; \
 		exit 1; \
 	fi
 	@if command -v gpg >/dev/null 2>&1; then \
-		echo "$(BLUE)🔐 You will be prompted for a passphrase...$(NC)"; \
+		echo "$(BLUE)🔐 You will be prompted for AI_DOCS_ROOT_KEY passphrase...$(NC)"; \
+		echo "$(YELLOW)⚠️  Note: refs/ directory is NOT encrypted here (use encrypt-refs)$(NC)"; \
 		./ai_docs/internal/ENCRYPT_AI_DOCS.sh && \
-		echo "$(GREEN)✅ ai_docs/ encrypted successfully to ai_docs.tar.gz.gpg$(NC)" && \
-		echo "$(YELLOW)💡 Original directory preserved for local use$(NC)" && \
-		echo "$(CYAN)💡 The encrypted file (.gpg) can be safely committed to git$(NC)" && \
-		echo "$(CYAN)💡 Use 'make decrypt-ai-docs' to decrypt when needed$(NC)"; \
+		echo "$(GREEN)✅ ai_docs/ root encrypted successfully to ai_docs.tar.gz.gpg$(NC)" && \
+		echo "$(CYAN)💡 Use 'make encrypt-refs' to encrypt refs/ separately$(NC)"; \
 	else \
 		echo "$(RED)❌ GPG not installed$(NC)"; \
 		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
 		exit 1; \
 	fi
 
-decrypt-ai-docs: ## 🔓 Decrypt ai_docs.tar.gz.gpg with GPG (requires passphrase)
-	@echo "$(YELLOW)🔓 Decrypting ai_docs.tar.gz.gpg with GPG...$(NC)"
+decrypt-ai-docs: ## 🔓 Decrypt ai_docs.tar.gz.gpg (root layer, excludes refs/)
+	@echo "$(YELLOW)🔓 Decrypting ai_docs.tar.gz.gpg (root layer)...$(NC)"
 	@if [ ! -f "ai_docs.tar.gz.gpg" ]; then \
 		echo "$(RED)❌ ai_docs.tar.gz.gpg not found$(NC)"; \
 		echo "$(CYAN)💡 Use 'make encrypt-ai-docs' to create encrypted version$(NC)"; \
 		exit 1; \
 	fi
 	@if command -v gpg >/dev/null 2>&1; then \
-		echo "$(BLUE)🔐 You will be prompted for the passphrase...$(NC)"; \
+		echo "$(BLUE)🔐 You will be prompted for AI_DOCS_ROOT_KEY passphrase...$(NC)"; \
+		echo "$(YELLOW)⚠️  Note: refs/ directory is NOT decrypted here (use decrypt-refs)$(NC)"; \
 		(if [ -f "ai_docs/internal/DECRYPT_AI_DOCS.sh" ]; then \
 			./ai_docs/internal/DECRYPT_AI_DOCS.sh; \
 		else \
 			echo "$(YELLOW)⚠️  ai_docs/internal/ not found, decrypting directly...$(NC)" && \
-		gpg --decrypt --output ai_docs.tar.gz ai_docs.tar.gz.gpg && \
-		tar -xzf ai_docs.tar.gz && \
-		rm ai_docs.tar.gz && \
-		if [ -d "ai_docs/internal" ]; then \
-			chmod +x ai_docs/internal/*.sh 2>/dev/null || true && \
-			echo "$(GREEN)✅ Scripts permissions set$(NC)"; \
-		fi && \
-		if [ -f "ai_docs/internal/.gitmodules.template" ]; then \
-			cp ai_docs/internal/.gitmodules.template .gitmodules && \
-			echo "$(GREEN)✅ .gitmodules restored at repository root$(NC)"; \
-		fi && \
-		if [ -f ".gitmodules" ]; then \
-			echo "$(YELLOW)🔄 Initializing git submodules...$(NC)" && \
-			git submodule update --init --recursive 2>&1 | grep -v "fatal: No url found" || true && \
-			echo "$(GREEN)✅ Submodules initialized$(NC)" && \
-			echo "$(CYAN)💡 Note: Nested submodules in reference repos are ignored (expected)$(NC)"; \
-		fi; \
+			gpg --decrypt --output ai_docs.tar.gz ai_docs.tar.gz.gpg && \
+			tar -xzf ai_docs.tar.gz && \
+			rm ai_docs.tar.gz && \
+			if [ -d "ai_docs/internal" ]; then \
+				chmod +x ai_docs/internal/*.sh 2>/dev/null || true && \
+				echo "$(GREEN)✅ Scripts permissions set$(NC)"; \
+			fi; \
 		fi) && \
-		echo "$(GREEN)✅ ai_docs/ decrypted successfully$(NC)" && \
-		echo "$(YELLOW)⚠️  Remember: ai_docs/ is in .gitignore and won't be committed$(NC)" && \
-		echo "$(CYAN)💡 Make your changes, then use 'make encrypt-ai-docs' to update encrypted version$(NC)"; \
+		echo "$(GREEN)✅ ai_docs/ root decrypted successfully$(NC)" && \
+		echo "$(CYAN)💡 Use 'make decrypt-refs' to decrypt refs/ separately if needed$(NC)"; \
 	else \
 		echo "$(RED)❌ GPG not installed$(NC)"; \
 		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
 		exit 1; \
 	fi
 
-check-ai-docs: ## 🔍 Check ai_docs status (encrypted vs decrypted)
-	@echo "$(CYAN)🔍 AI Docs Status$(NC)"
-	@echo "=================="
+check-ai-docs: ## 🔍 Check ai_docs status (multi-layer encryption)
+	@echo "$(CYAN)🔍 AI Docs Status (Multi-Layer Encryption)$(NC)"
+	@echo "============================================="
 	@echo "$(BLUE)📁 Location: repository root$(NC)"
 	@echo ""
+	@echo "$(YELLOW)Layer 1: AI Docs Root (excluding refs/)$(NC)"
 	@if [ -d "ai_docs" ]; then \
-		echo "$(GREEN)✅ Decrypted version: ai_docs/$(NC)"; \
+		echo "$(GREEN)✅ Decrypted: ai_docs/$(NC)"; \
 		echo "   📊 Size: $$(du -sh ai_docs 2>/dev/null | cut -f1 || echo 'N/A')"; \
-		echo "   🔍 Git status: Not tracked (in .gitignore)"; \
+		echo "   🔍 Git: Not tracked (in .gitignore)"; \
 	else \
-		echo "$(YELLOW)⚠️  No decrypted version found$(NC)"; \
-		echo "   💡 Use 'make decrypt-ai-docs' to decrypt"; \
+		echo "$(YELLOW)⚠️  Not decrypted$(NC)"; \
+		echo "   💡 Use 'make decrypt-ai-docs'"; \
+	fi
+	@if [ -f "ai_docs.tar.gz.gpg" ]; then \
+		echo "$(GREEN)✅ Encrypted: ai_docs.tar.gz.gpg$(NC)"; \
+		echo "   📊 Size: $$(du -h ai_docs.tar.gz.gpg | cut -f1)"; \
+		echo "   🔑 Key: AI_DOCS_ROOT_KEY"; \
+	else \
+		echo "$(RED)❌ Not encrypted$(NC)"; \
+		echo "   💡 Use 'make encrypt-ai-docs'"; \
 	fi
 	@echo ""
-	@if [ -f "ai_docs.tar.gz.gpg" ]; then \
-		echo "$(GREEN)✅ Encrypted version: ai_docs.tar.gz.gpg$(NC)"; \
-		echo "   📊 Size: $$(du -h ai_docs.tar.gz.gpg | cut -f1)"; \
-		echo "   📅 Modified: $$(stat -f "%Sm" ai_docs.tar.gz.gpg 2>/dev/null || stat -c "%y" ai_docs.tar.gz.gpg 2>/dev/null | cut -d' ' -f1-2)"; \
-		echo "   🔍 Git status: Can be safely committed"; \
+	@echo "$(YELLOW)Layer 2: Refs Subdirectory$(NC)"
+	@if [ -d "ai_docs/refs" ] && [ -n "$$(ls -A ai_docs/refs 2>/dev/null)" ]; then \
+		echo "$(GREEN)✅ Decrypted: ai_docs/refs/$(NC)"; \
+		echo "   📊 Size: $$(du -sh ai_docs/refs 2>/dev/null | cut -f1 || echo 'N/A')"; \
 	else \
-		echo "$(RED)❌ No encrypted version found$(NC)"; \
-		echo "   💡 Use 'make encrypt-ai-docs' to create encrypted version"; \
+		echo "$(YELLOW)⚠️  Not decrypted or empty$(NC)"; \
+		echo "   💡 Use 'make decrypt-refs' if encrypted"; \
+	fi
+	@if [ -f "ai_docs_refs.tar.gz.gpg" ]; then \
+		echo "$(GREEN)✅ Encrypted: ai_docs_refs.tar.gz.gpg$(NC)"; \
+		echo "   📊 Size: $$(du -h ai_docs_refs.tar.gz.gpg | cut -f1)"; \
+		echo "   🔑 Key: AI_DOCS_REFS_KEY (different from root!)"; \
+	else \
+		echo "$(YELLOW)⚠️  Not encrypted$(NC)"; \
+		echo "   💡 Use 'make encrypt-refs' to encrypt"; \
 	fi
 	@echo ""
 	@echo "$(BLUE)🔧 Available Commands:$(NC)"
-	@echo "   🔓 Decrypt:  make decrypt-ai-docs"
-	@echo "   🔒 Encrypt:  make encrypt-ai-docs"
-	@echo "   🔍 Status:   make check-ai-docs"
+	@echo "   🔓 Decrypt root:  make decrypt-ai-docs"
+	@echo "   🔒 Encrypt root:  make encrypt-ai-docs"
+	@echo "   🔓 Decrypt refs:  make decrypt-refs"
+	@echo "   🔒 Encrypt refs:  make encrypt-refs"
+	@echo "   🔒 Encrypt all:   make encrypt-all-docs"
+	@echo "   🔓 Decrypt all:   make decrypt-all-docs"
+	@echo "   🔍 Status:        make check-ai-docs"
 	@echo ""
 	@echo "$(BLUE)🔐 Security Notes:$(NC)"
+	@echo "   • Multi-layer encryption with separate passphrases"
+	@echo "   • Root key: AI_DOCS_ROOT_KEY (for ai_docs/ excluding refs/)"
+	@echo "   • Refs key: AI_DOCS_REFS_KEY (for refs/ only, different!)"
 	@echo "   • Encryption: AES256 symmetric encryption"
-	@echo "   • Passphrase: Interactive prompt (secure)"
 	@echo "   • Git: Only .gpg files are tracked"
-	@echo "   • .gitmodules: Restored from template after decryption"
 
 clean-ai-docs: ## 🧹 Remove decrypted ai_docs/ (keep encrypted version)
 	@echo "$(YELLOW)🧹 Removing decrypted ai_docs/ directory...$(NC)"
@@ -1065,27 +1077,92 @@ clean-ai-docs: ## 🧹 Remove decrypted ai_docs/ (keep encrypted version)
 		echo "$(YELLOW)⚠️  No decrypted version found$(NC)"; \
 	fi
 
-ai-docs-workflow: ## 📋 Show ai_docs workflow guide
-	@echo "$(CYAN)📋 AI Docs Workflow Guide$(NC)"
-	@echo "=========================="
+encrypt-refs: ## 🔒 Encrypt ai_docs/refs/ directory (separate layer)
+	@echo "$(YELLOW)🔒 Encrypting ai_docs/refs/ directory (separate layer)...$(NC)"
+	@if [ ! -d "ai_docs/refs" ]; then \
+		echo "$(RED)❌ ai_docs/refs/ directory not found$(NC)"; \
+		echo "$(CYAN)💡 Use 'make decrypt-refs' to decrypt first, or create the directory$(NC)"; \
+		exit 1; \
+	fi
+	@if command -v gpg >/dev/null 2>&1; then \
+		echo "$(BLUE)🔐 You will be prompted for AI_DOCS_REFS_KEY passphrase...$(NC)"; \
+		echo "$(YELLOW)⚠️  IMPORTANT: This uses a DIFFERENT passphrase from root encryption!$(NC)"; \
+		./ai_docs/internal/ENCRYPT_REFS.sh && \
+		echo "$(GREEN)✅ refs/ encrypted successfully to ai_docs_refs.tar.gz.gpg$(NC)"; \
+	else \
+		echo "$(RED)❌ GPG not installed$(NC)"; \
+		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
+		exit 1; \
+	fi
+
+decrypt-refs: ## 🔓 Decrypt ai_docs_refs.tar.gz.gpg (separate layer)
+	@echo "$(YELLOW)🔓 Decrypting ai_docs_refs.tar.gz.gpg (refs layer)...$(NC)"
+	@if [ ! -f "ai_docs_refs.tar.gz.gpg" ]; then \
+		echo "$(RED)❌ ai_docs_refs.tar.gz.gpg not found$(NC)"; \
+		echo "$(CYAN)💡 Use 'make encrypt-refs' to create encrypted version$(NC)"; \
+		exit 1; \
+	fi
+	@if command -v gpg >/dev/null 2>&1; then \
+		echo "$(BLUE)🔐 You will be prompted for AI_DOCS_REFS_KEY passphrase...$(NC)"; \
+		echo "$(YELLOW)⚠️  IMPORTANT: This uses a DIFFERENT passphrase from root decryption!$(NC)"; \
+		./ai_docs/internal/DECRYPT_REFS.sh && \
+		echo "$(GREEN)✅ refs/ decrypted successfully$(NC)"; \
+	else \
+		echo "$(RED)❌ GPG not installed$(NC)"; \
+		echo "$(CYAN)💡 Install with: brew install gnupg$(NC)"; \
+		exit 1; \
+	fi
+
+encrypt-all-docs: ## 🔒 Encrypt both layers (root + refs)
+	@echo "$(CYAN)🔒 Encrypting all ai_docs layers...$(NC)"
+	@$(MAKE) encrypt-ai-docs
+	@echo ""
+	@$(MAKE) encrypt-refs
+	@echo ""
+	@echo "$(GREEN)✅ All layers encrypted successfully!$(NC)"
+
+decrypt-all-docs: ## 🔓 Decrypt both layers (root + refs)
+	@echo "$(CYAN)🔓 Decrypting all ai_docs layers...$(NC)"
+	@$(MAKE) decrypt-ai-docs
+	@echo ""
+	@$(MAKE) decrypt-refs
+	@echo ""
+	@echo "$(GREEN)✅ All layers decrypted successfully!$(NC)"
+
+ai-docs-workflow: ## 📋 Show ai_docs workflow guide (multi-layer)
+	@echo "$(CYAN)📋 AI Docs Workflow Guide (Multi-Layer Encryption)$(NC)"
+	@echo "====================================================="
 	@echo ""
 	@echo "$(BLUE)🚀 Getting Started (New Machine):$(NC)"
 	@echo "1. git clone <repo>"
-	@echo "2. make decrypt-ai-docs    # Decrypt for use"
-	@echo "3. # Use ai_docs/ templates"
-	@echo "4. make encrypt-ai-docs    # Encrypt changes"
-	@echo "5. git add ai_docs.tar.gz.gpg"
+	@echo "2. make decrypt-all-docs    # Decrypt both layers"
+	@echo "3. # Use ai_docs/ templates and refs/"
+	@echo "4. make encrypt-all-docs    # Encrypt both layers"
+	@echo "5. git add ai_docs*.tar.gz.gpg"
 	@echo "6. git commit -m 'Update ai_docs'"
 	@echo ""
 	@echo "$(BLUE)🔄 Daily Workflow:$(NC)"
-	@echo "• Morning:   make decrypt-ai-docs"
-	@echo "• Work:      Use ai_docs/ templates"
-	@echo "• Evening:   make encrypt-ai-docs"
+	@echo "• Morning:   make decrypt-all-docs"
+	@echo "• Work:      Use ai_docs/ templates and refs/"
+	@echo "• Evening:   make encrypt-all-docs"
 	@echo "• Cleanup:   make clean-ai-docs (optional)"
+	@echo ""
+	@echo "$(BLUE)🔐 Multi-Layer Encryption:$(NC)"
+	@echo "• Layer 1: ai_docs/ root (AI_DOCS_ROOT_KEY)"
+	@echo "  - Includes: knowledge-graph/, internal/"
+	@echo "  - Excludes: refs/"
+	@echo "• Layer 2: ai_docs/refs/ (AI_DOCS_REFS_KEY - different!)"
+	@echo "  - Includes: reference repositories"
+	@echo "  - Separate passphrase for access control"
+	@echo ""
+	@echo "$(BLUE)🎯 Access Control Levels:$(NC)"
+	@echo "• Level 1: Root key only → Access to ai_docs/ (no refs/)"
+	@echo "• Level 2: Refs key only → Access to refs/ (no root)"
+	@echo "• Level 3: Both keys → Full access"
 	@echo ""
 	@echo "$(BLUE)🔐 Security Benefits:$(NC)"
 	@echo "• Private templates in public repo"
-	@echo "• AES256 encryption"
-	@echo "• Personal passphrase protection"
+	@echo "• AES256 encryption (multi-layer)"
+	@echo "• Separate passphrases for granular access"
+	@echo "• Private references protected separately"
 	@echo "• No sensitive info in git history"
-	@echo "• .gitmodules template encrypted (submodule URLs protected)"
