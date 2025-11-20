@@ -1,8 +1,6 @@
 .env
-.gitmodules
 
 docs/roadmap.md
-ai_docs/
 
 
 # Temporary files

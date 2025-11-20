@@ -1,0 +1,4 @@
+[submodule "ai_docs"]
+	path = ai_docs
+	url = git@github.com:FabioCaffarello/ai-docs.git
+	branch = main
