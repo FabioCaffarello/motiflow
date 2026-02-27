@@ -1,7 +1,33 @@
+# Environment
 .env
+.env.local
+.env.*.local
 
+# Build artifacts & coverage
+coverage/
+reports/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE & editors
+.cursor/plans/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Temporary docs
 docs/roadmap.md
-
-
-# Temporary files
 docs/rs-synthetic-data.md

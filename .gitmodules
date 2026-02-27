@@ -1,9 +1,0 @@
-[submodule "react-design-system"]
-	path = react-design-system
-	url = git@github.com:FabioCaffarello/react-design-system.git
-[submodule "docs/references/react-flow"]
-	path = docs/references/react-flow
-	url = https://github.com/xyflow/xyflow.git
-[submodule "admin/app-builder"]
-	path = admin/app-builder
-	url = git@github.com:FabioCaffarello/app-builder.git
