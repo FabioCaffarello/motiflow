@@ -1,0 +1,273 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Run ESLint
+        working-directory: react-design-system
+        run: npm run lint
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Type check
+        working-directory: react-design-system
+        run: npx tsc --noEmit
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Run tests
+        working-directory: react-design-system
+        run: npm run test
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          directory: react-design-system/coverage
+          flags: unittests
+          name: codecov-umbrella
+
+  validate-stories:
+    name: Validate Stories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Validate stories
+        working-directory: react-design-system
+        run: npm run validate-stories
+
+  validate-architecture:
+    name: Validate Architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Validate architecture
+        working-directory: react-design-system
+        run: npm run validate-architecture
+
+  validate-a11y:
+    name: Validate Accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Validate accessibility
+        working-directory: react-design-system
+        run: npm run validate-a11y
+
+  validate-themes:
+    name: Validate Themes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Validate themes
+        working-directory: react-design-system
+        run: npm run validate-themes
+
+  build-storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Build Storybook
+        working-directory: react-design-system
+        run: npm run build-storybook
+      
+      - name: Upload Storybook build
+        uses: actions/upload-artifact@v3
+        with:
+          name: storybook-build
+          path: react-design-system/storybook-static
+          retention-days: 7
+
+  chromatic:
+    name: Visual Regression (Chromatic)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Run Chromatic
+        working-directory: react-design-system
+        uses: chromaui/action@v1
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          exitZeroOnChanges: true
+          exitOnceUploaded: true
+
+  generate-docs:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react-design-system/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: react-design-system
+        run: npm ci
+      
+      - name: Generate context diagram
+        working-directory: react-design-system
+        run: npm run generate-context-diagram
+      
+      - name: Generate story index
+        working-directory: react-design-system
+        run: npm run generate-story-index
+      
+      - name: Commit changes
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add react-design-system/docs/
+          git diff --staged --quiet || git commit -m "docs: auto-generate documentation [skip ci]"
+          git push
+
+  deploy-storybook:
+    name: Deploy Storybook
+    runs-on: ubuntu-latest
+    needs: [build-storybook]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Storybook build
+        uses: actions/download-artifact@v3
+        with:
+          name: storybook-build
+          path: react-design-system/storybook-static
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: react-design-system/storybook-static
+          cname: storybook.design-system.example.com  # Update with your domain

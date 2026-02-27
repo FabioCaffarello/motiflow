@@ -1,0 +1,6 @@
+# Ignore build artifacts
+**/target/
+**/node_modules/
+**/.git/
+**/.cargo/
+*.log

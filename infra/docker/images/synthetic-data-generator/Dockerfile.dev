@@ -1,0 +1,27 @@
+# Development Dockerfile for synthetic-data-generator
+FROM rust:1.75-slim
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    ca-certificates \
+    git \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install cargo-watch for development
+RUN cargo install cargo-watch
+
+# Set working directory
+WORKDIR /app
+
+# Copy workspace files
+COPY synthetic-data-generator/ ./synthetic-data-generator/
+
+# Create directories for data
+RUN mkdir -p /app/data /app/config /app/output
+
+# Default command (can be overridden)
+CMD ["cargo", "watch", "-x", "check"]

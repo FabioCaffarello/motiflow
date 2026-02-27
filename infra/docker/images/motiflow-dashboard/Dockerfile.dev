@@ -1,0 +1,40 @@
+# Development Dockerfile for Motiflow Dashboard
+FROM node:20-alpine
+
+# Install dependencies for Prisma
+RUN apk add --no-cache libc6-compat openssl
+
+WORKDIR /app
+
+# Copy package files
+COPY web/motiflow-dashboard/package.json ./
+COPY web/motiflow-dashboard/prisma ./prisma
+
+# Install dependencies
+# For development, use npm install (will generate package-lock.json if needed)
+# Note: Design system version is specified in package.json (e.g., ^1.2.1)
+# If you update the design system version, rebuild the image without cache:
+# docker compose --profile dev build --no-cache motiflow-dashboard
+RUN npm install
+
+# Copy source code (excluding node_modules, .next, etc)
+# Copy selectively to avoid overwriting node_modules
+COPY web/motiflow-dashboard/app ./app
+COPY web/motiflow-dashboard/src ./src
+COPY web/motiflow-dashboard/lib ./lib
+COPY web/motiflow-dashboard/public ./public
+COPY web/motiflow-dashboard/next.config.ts ./
+COPY web/motiflow-dashboard/tsconfig.json ./
+COPY web/motiflow-dashboard/postcss.config.mjs ./
+COPY web/motiflow-dashboard/eslint.config.mjs ./
+# Copy components.json if it exists (optional for shadcn/ui)
+COPY web/motiflow-dashboard/components.json* ./
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Expose port
+EXPOSE 5000
+
+# Start development server
+CMD ["npm", "run", "dev"]

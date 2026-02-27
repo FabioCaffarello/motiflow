@@ -1,0 +1,217 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Epic Aggregate Root
+model Epic {
+  id          String   @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  status      EpicStatus @default(DRAFT)
+  priority    Priority  @default(MEDIUM)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  stories     Story[]
+
+  @@index([status])
+  @@index([priority])
+  @@map("epics")
+}
+
+enum EpicStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+// User Story Entity
+model Story {
+  id                String   @id @default(cuid())
+  title             String
+  description       String? @db.Text
+  as                String   // As a [user type]
+  iWant             String   // I want [goal]
+  soThat            String   // So that [benefit]
+  storyPoints       Int?     // Fibonacci: 1, 2, 3, 5, 8, 13, 21
+  status            StoryStatus @default(BACKLOG)
+  priority          Priority    @default(MEDIUM)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  epicId            String?
+  epic              Epic?    @relation(fields: [epicId], references: [id], onDelete: Cascade)
+  tasks             Task[]
+  acceptanceCriteria AcceptanceCriteria[]
+  sprintStories     SprintStory[]
+
+  @@index([epicId])
+  @@index([status])
+  @@index([priority])
+  @@map("stories")
+}
+
+enum StoryStatus {
+  BACKLOG
+  PLANNED
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+// Task Entity
+model Task {
+  id          String      @id @default(cuid())
+  title       String
+  description String?     @db.Text
+  status      TaskStatus  @default(TODO)
+  priority    Priority    @default(MEDIUM)
+  estimate    Int?        // Estimated hours
+  assignee    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  storyId     String?
+  story       Story?      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@index([status])
+  @@index([assignee])
+  @@map("tasks")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Acceptance Criteria Value Object (stored as separate table)
+model AcceptanceCriteria {
+  id          String   @id @default(cuid())
+  description String   @db.Text
+  testable    Boolean  @default(true)
+  satisfied   Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  storyId     String
+  story       Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@index([storyId, order])
+  @@map("acceptance_criteria")
+}
+
+// Sprint Aggregate
+model Sprint {
+  id          String   @id @default(cuid())
+  name        String
+  goal        String?   @db.Text
+  status      SprintStatus @default(PLANNED)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  stories     SprintStory[]
+
+  @@index([status])
+  @@index([startDate])
+  @@map("sprints")
+}
+
+enum SprintStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// Many-to-Many: Sprint <-> Story
+model SprintStory {
+  id        String   @id @default(cuid())
+  sprintId  String
+  storyId   String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  sprint    Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([sprintId, storyId])
+  @@index([sprintId])
+  @@index([storyId])
+  @@map("sprint_stories")
+}
+
+// ADR Aggregate
+model ADR {
+  id          String   @id @default(cuid())
+  number      Int      @unique
+  title       String
+  context     String   @db.Text
+  decision    String   @db.Text
+  consequences String? @db.Text
+  status      ADRStatus @default(PROPOSED)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([number])
+  @@map("adrs")
+}
+
+enum ADRStatus {
+  PROPOSED
+  ACCEPTED
+  DEPRECATED
+  SUPERSEDED
+}
+
+// Roadmap Item
+model RoadmapItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  category    String
+  status      RoadmapStatus @default(PLANNED)
+  targetDate  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([targetDate])
+  @@map("roadmap_items")
+}
+
+enum RoadmapStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}

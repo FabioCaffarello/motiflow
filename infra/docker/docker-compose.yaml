@@ -95,11 +95,112 @@ services:
       - motiflow-network
     restart: unless-stopped
 
+  synthetic-data-generator:
+    build:
+      context: ../..
+      dockerfile: infra/docker/images/synthetic-data-generator/Dockerfile
+    container_name: synthetic-data-generator
+    environment:
+      - RUST_LOG=info
+      - RUST_BACKTRACE=1
+    volumes:
+      # Mount config directory
+      - ../../synthetic-data-generator/examples:/app/config:ro
+      # Mount output directory (writable)
+      - synthetic-data-output:/app/output
+      # Mount data directory for test datasets
+      - ../../datasets-examples:/app/data:ro
+    networks:
+      - motiflow-network
+    restart: unless-stopped
+    depends_on:
+      minio:
+        condition: service_started
+    # Keep container running
+    command: ["sleep", "infinity"]
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/syngen", "--help"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  synthetic-data-generator-dev:
+    build:
+      context: ../..
+      dockerfile: infra/docker/images/synthetic-data-generator/Dockerfile.dev
+    container_name: synthetic-data-generator-dev
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=full
+    volumes:
+      # Mount entire source for live development
+      - ../../synthetic-data-generator:/app/synthetic-data-generator
+      # Mount config and output
+      - ../../synthetic-data-generator/examples:/app/config:ro
+      - synthetic-data-output:/app/output
+      - ../../datasets-examples:/app/data:ro
+    networks:
+      - motiflow-network
+    profiles:
+      - dev
+    # Can be used for interactive development
+    stdin_open: true
+    tty: true
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: motiflow-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-motiflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-motiflow123}
+      POSTGRES_DB: ${POSTGRES_DB:-motiflow_dashboard}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - motiflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-motiflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  motiflow-dashboard:
+    build:
+      context: ../..
+      dockerfile: infra/docker/images/motiflow-dashboard/Dockerfile.dev
+    container_name: motiflow-dashboard
+    ports:
+      - "5001:5000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-motiflow}:${POSTGRES_PASSWORD:-motiflow123}@postgres:5432/${POSTGRES_DB:-motiflow_dashboard}
+      - NEXT_PUBLIC_APP_URL=http://localhost:5001
+    volumes:
+      # Mount source code for hot-reload
+      - ../../web/motiflow-dashboard:/app
+      # Exclude node_modules and .next to use container's versions
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - motiflow-network
+    restart: unless-stopped
+    profiles:
+      - dev
+
 volumes:
   minio-data:
   spark-warehouse:
   spark-checkpoints:
   conf:
+  synthetic-data-output:
+  postgres-data:
 
 networks:
   motiflow-network:

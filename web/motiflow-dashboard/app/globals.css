@@ -1,0 +1,44 @@
+@import "tailwindcss";
+/* Design System styles - importar do pacote npm quando disponível */
+/* Por enquanto, as classes TailwindCSS customizadas precisam ser configuradas localmente */
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  
+  /* Design System theme variables */
+  --spacing-form-element: 38px;
+  --font-size-base: 12px;
+  --spacing-small: 4px;
+  --spacing-medium: 8px;
+  --spacing-large: 16px;
+  --color-grey-dark: #454545;
+  --color-grey-minor: #8b9ca0;
+  --color-grey-light: #ccc;
+  --color-blue-light: #a7dbd8;
+  --color-blue-dark: #062e4c;
+  --color-red-light: #ffa5a5;
+  --color-red-dark: #4c0606;
+  --color-bg: #fff;
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}

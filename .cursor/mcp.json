@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "storybook-mcp": {
+      "transport": "http",
+      "url": "http://localhost:6006/mcp",
+      "description": "Storybook MCP server for UI development instructions and story URLs"
+    }
+  }
+}
